@@ -8,20 +8,24 @@
       </div>
 
       <!-- Навигация десктоп -->
-      <nav class="hidden md:flex space-x-6 items-center">
-        <RouterLink to="/" class="flex items-center space-x-1 hover:text-blue-400 transition-colors">
-          <HomeIcon class="w-5 h-5"/> <span>Home</span>
+      <nav class="hidden md:flex space-x-6 items-center ">
+        <RouterLink to="/" class="flex items-center space-x-1 hover:text-blue-400  transform transition-all duration-300
+               hover:-translate-y-0.5 hover:shadow-xl">
+          <HomeIcon class="w-5 h-5"/> <span class="">Home</span>
         </RouterLink>
-        <RouterLink to="/aboutus" class="flex items-center space-x-1 hover:text-blue-400 transition-colors">
+        <RouterLink to="/aboutus" class="flex items-center space-x-1 hover:text-blue-400 transform transition-all duration-300
+               hover:-translate-y-0.5 hover:shadow-xl">
           <InformationCircleIcon class="w-5 h-5"/> <span>About Us</span>
         </RouterLink>
-        <RouterLink to="/contactus" class="flex items-center space-x-1 hover:text-blue-400 transition-colors">
+        <RouterLink to="/contactus" class="flex items-center space-x-1 hover:text-blue-400 transform transition-all duration-300
+               hover:-translate-y-0.5 hover:shadow-xl">
           <PhoneIcon class="w-5 h-5"/> <span>Contact</span>
         </RouterLink>
       </nav>
 
       <!-- Кнопка логина десктоп -->
-      <button class="hidden md:block bg-blue-500 px-4 py-2 rounded hover:bg-blue-600 transition transform hover:-translate-y-0.5 hover:shadow-lg">
+      <button class="hidden md:block bg-blue-500 px-4 py-2 rounded hover:bg-blue-600 transform transition-all duration-300
+                hover:shadow-xl">
         Login
       </button>
 
@@ -37,7 +41,7 @@
 
     <!-- Мобильное меню -->
     <transition name="slide-fade">
-      <div v-if="mobileMenuOpen" class="md:hidden bg-gray-700 dark:bg-gray-800 text-white flex flex-col space-y-2 p-4">
+      <div v-if="mobileMenuOpen" class="md:hidden bg-gray-700 dark:bg-gray-800 text-white flex flex-col space-y-2 p-4 ">
         <RouterLink to="/" class="flex items-center space-x-1 hover:text-blue-400 transition-colors" @click="mobileMenuOpen = false">
           <HomeIcon class="w-5 h-5"/> <span>Home</span>
         </RouterLink>
