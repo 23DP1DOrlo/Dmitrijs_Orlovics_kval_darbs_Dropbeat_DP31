@@ -66,9 +66,9 @@ class DatabaseSeeder extends Seeder
         ])->mapWithKeys(fn ($name) => [$name => Genre::create(['name' => $name])]);
 
         $releases = [
-            ['title' => 'Midnight Flow', 'type' => 'single', 'genre' => 'Hip-Hop', 'date' => '2026-02-12'],
-            ['title' => 'Neon Streets EP', 'type' => 'ep', 'genre' => 'Electronic', 'date' => '2026-01-21'],
-            ['title' => 'Grey Atmosphere', 'type' => 'album', 'genre' => 'Lo-Fi', 'date' => '2025-11-04'],
+            ['title' => 'Midnight Flow', 'type' => 'single', 'genre' => 'Hip-Hop', 'date' => '2026-02-12', 'cover' => 'https://images.unsplash.com/photo-1511379938547-c1f69419868d'],
+            ['title' => 'Neon Streets EP', 'type' => 'ep', 'genre' => 'Electronic', 'date' => '2026-01-21', 'cover' => 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745'],
+            ['title' => 'Grey Atmosphere', 'type' => 'album', 'genre' => 'Lo-Fi', 'date' => '2025-11-04', 'cover' => 'https://images.unsplash.com/photo-1501612780327-45045538702b'],
         ];
 
         foreach ($releases as $index => $item) {
@@ -79,6 +79,7 @@ class DatabaseSeeder extends Seeder
                 'release_date' => $item['date'],
                 'type' => $item['type'],
                 'description' => 'Demo relize kvalifikacijas darba funkcionalitates demonstracijai.',
+                'cover_url' => $item['cover'],
                 'duration_seconds' => 1500 + ($index * 200),
                 'is_published' => true,
             ]);

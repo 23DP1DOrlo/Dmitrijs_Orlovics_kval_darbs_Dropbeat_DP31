@@ -12,12 +12,14 @@ export function AuthPage({ onAuth }) {
     stage_name: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const submit = async (event) => {
     event.preventDefault();
     setError("");
+    setLoading(true);
     try {
       const endpoint = mode === "login" ? "/auth/login" : "/auth/register";
       const payload =
@@ -29,7 +31,15 @@ export function AuthPage({ onAuth }) {
       localStorage.setItem("dropbeat_user", JSON.stringify(data.user));
       onAuth(data.user);
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas pieslegties.");
+      const validationErrors = requestError?.response?.data?.errors;
+      if (validationErrors) {
+        const firstError = Object.values(validationErrors)[0]?.[0];
+        setError(firstError ?? "Neizdevas pieslegties.");
+      } else {
+        setError(requestError?.response?.data?.message ?? "Neizdevas pieslegties.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,7 +71,7 @@ export function AuthPage({ onAuth }) {
             onChange={(e) => update("password_confirmation", e.target.value)}
           />
         )}
-        <button type="submit">{mode === "login" ? "Ienakt" : "Izveidot kontu"}</button>
+        <button type="submit" disabled={loading}>{mode === "login" ? "Ienakt" : "Izveidot kontu"}</button>
       </form>
       {error && <p className="error">{error}</p>}
       <button className="link-btn" onClick={() => setMode((prev) => (prev === "login" ? "register" : "login"))}>

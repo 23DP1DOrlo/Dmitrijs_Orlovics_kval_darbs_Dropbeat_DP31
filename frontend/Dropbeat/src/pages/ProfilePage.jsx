@@ -3,6 +3,7 @@ import { api } from "../api";
 
 export function ProfilePage({ user }) {
   const [profile, setProfile] = useState(null);
+  const [message, setMessage] = useState("");
   const [form, setForm] = useState({
     stage_name: "",
     country: "LV",
@@ -40,12 +41,20 @@ export function ProfilePage({ user }) {
     event.preventDefault();
     const { data } = await api.put("/me/artist-profile", form);
     setProfile(data);
+    setMessage("Profils veiksmigi atjaunots.");
   };
 
   return (
     <section className="panel">
       <h2>Makslinieka profils</h2>
-      <p>Konts: {profile?.user?.email ?? user.email}</p>
+      {message && <p className="ok">{message}</p>}
+      <div className="profile-head">
+        <div className="avatar">{(form.stage_name || "A").slice(0, 1).toUpperCase()}</div>
+        <div>
+          <h3>{form.stage_name || "Makslinieks"}</h3>
+          <p className="muted">Konts: {profile?.user?.email ?? user.email}</p>
+        </div>
+      </div>
       <form className="form-grid" onSubmit={submit}>
         <input value={form.stage_name} onChange={(e) => setForm((p) => ({ ...p, stage_name: e.target.value }))} placeholder="Skatuves vards" />
         <input value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} placeholder="Valsts kods" />

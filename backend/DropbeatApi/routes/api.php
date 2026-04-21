@@ -24,6 +24,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('artists', ArtistController::class)->except(['create', 'edit']);
     Route::apiResource('releases', ReleaseController::class)->except(['index', 'show', 'create', 'edit']);
     Route::post('/releases/{release}/stats', [ReleaseController::class, 'storeStats']);
+    Route::post('/releases/{release}/rate', [ReleaseController::class, 'rate']);
+    Route::post('/releases/{release}/comments', [ReleaseController::class, 'comment']);
     Route::get('/me/artist-profile', [ArtistController::class, 'myProfile']);
     Route::put('/me/artist-profile', [ArtistController::class, 'updateMyProfile']);
 });

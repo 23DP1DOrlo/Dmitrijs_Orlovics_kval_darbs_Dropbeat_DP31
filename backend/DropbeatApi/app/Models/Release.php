@@ -34,4 +34,14 @@ class Release extends Model
     {
         return $this->hasMany(ReleaseStat::class);
     }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(ReleaseRating::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(ReleaseComment::class);
+    }
 }

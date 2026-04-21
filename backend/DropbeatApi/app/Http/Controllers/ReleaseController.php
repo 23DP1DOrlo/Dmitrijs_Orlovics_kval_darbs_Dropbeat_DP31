@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Release;
+use App\Models\ReleaseComment;
+use App\Models\ReleaseRating;
 use App\Models\ReleaseStat;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
 class ReleaseController extends Controller
@@ -23,7 +26,13 @@ class ReleaseController extends Controller
             'sort_dir' => ['nullable', 'in:asc,desc'],
         ]);
 
-        $query = Release::query()->with(['artist', 'genre', 'stats']);
+        $query = Release::query()
+            ->with(['artist', 'genre', 'stats'])
+            ->withCount('ratings')
+            ->withAvg('ratings as avg_rhymes_images', 'rhymes_images')
+            ->withAvg('ratings as avg_structure_rhythm', 'structure_rhythm')
+            ->withAvg('ratings as avg_style_execution', 'style_execution')
+            ->withAvg('ratings as avg_individuality_charisma', 'individuality_charisma');
 
         if (! empty($validated['q'])) {
             $term = $validated['q'];
@@ -52,45 +61,73 @@ class ReleaseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'artist_id' => ['required', 'exists:artists,id'],
             'genre_id' => ['required', 'exists:genres,id'],
             'title' => ['required', 'string', 'min:2', 'max:150'],
             'release_date' => ['required', 'date'],
             'type' => ['required', 'in:single,ep,album'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'cover_url' => ['nullable', 'url'],
+            'cover_url' => ['required', 'url'],
             'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:7200'],
             'is_published' => ['boolean'],
         ]);
 
-        return response()->json(Release::create($validated)->load(['artist', 'genre']), 201);
+        $artist = $request->user()?->artist;
+        if (! $artist && $request->user()?->role !== 'admin') {
+            return response()->json(['message' => 'Relizi var pievienot tikai makslinieks vai administrators.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $validated['artist_id'] = $artist?->id ?? $request->integer('artist_id');
+
+        return response()->json(Release::create($validated)->load(['artist', 'genre'])->loadCount('ratings'), 201);
     }
 
     public function show(Release $release)
     {
-        return $release->load(['artist.profile', 'genre', 'stats']);
+        return $release
+            ->load([
+                'artist.profile',
+                'genre',
+                'stats',
+                'comments.user:id,name',
+            ])
+            ->loadCount('ratings')
+            ->loadAvg('ratings as avg_rhymes_images', 'rhymes_images')
+            ->loadAvg('ratings as avg_structure_rhythm', 'structure_rhythm')
+            ->loadAvg('ratings as avg_style_execution', 'style_execution')
+            ->loadAvg('ratings as avg_individuality_charisma', 'individuality_charisma');
     }
 
     public function update(Request $request, Release $release)
     {
+        if (! $this->canManageRelease($request, $release)) {
+            return response()->json(['message' => 'Nav tiesibu rediget so relizi.'], Response::HTTP_FORBIDDEN);
+        }
+
         $validated = $request->validate([
-            'artist_id' => ['sometimes', 'exists:artists,id'],
             'genre_id' => ['sometimes', 'exists:genres,id'],
             'title' => ['sometimes', 'string', 'min:2', 'max:150'],
             'release_date' => ['sometimes', 'date'],
             'type' => ['sometimes', 'in:single,ep,album'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'cover_url' => ['nullable', 'url'],
+            'cover_url' => ['sometimes', 'url'],
             'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:7200'],
             'is_published' => ['boolean'],
         ]);
 
+        unset($validated['artist_id']);
+        if (! array_key_exists('cover_url', $validated)) {
+            $validated['cover_url'] = $release->cover_url;
+        }
         $release->update($validated);
         return $release->fresh()->load(['artist', 'genre']);
     }
 
     public function destroy(Release $release)
     {
+        if (! $this->canManageRelease(request(), $release)) {
+            return response()->json(['message' => 'Nav tiesibu dzest so relizi.'], Response::HTTP_FORBIDDEN);
+        }
+
         $release->delete();
         return response()->json([], 204);
     }
@@ -128,5 +165,69 @@ class ReleaseController extends Controller
             ->get();
 
         return response()->json($summary);
+    }
+
+    public function rate(Request $request, Release $release)
+    {
+        $user = $request->user();
+        if (! $user || $user->role !== 'listener') {
+            return response()->json(['message' => 'Vertet var tikai klausitajs.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $alreadyRated = ReleaseRating::where('release_id', $release->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if ($alreadyRated) {
+            return response()->json(['message' => 'Tu jau noverteji so relizi.'], Response::HTTP_CONFLICT);
+        }
+
+        $validated = $request->validate([
+            'rhymes_images' => ['required', 'integer', 'between:1,10'],
+            'structure_rhythm' => ['required', 'integer', 'between:1,10'],
+            'style_execution' => ['required', 'integer', 'between:1,10'],
+            'individuality_charisma' => ['required', 'integer', 'between:1,10'],
+        ]);
+
+        $rating = ReleaseRating::create([
+            'release_id' => $release->id,
+            'user_id' => $user->id,
+            ...$validated,
+        ]);
+
+        return response()->json($rating, 201);
+    }
+
+    public function comment(Request $request, Release $release)
+    {
+        $user = $request->user();
+        if (! $user || $user->role !== 'listener') {
+            return response()->json(['message' => 'Komentet var tikai klausitajs.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $validated = $request->validate([
+            'comment' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+
+        $comment = ReleaseComment::create([
+            'release_id' => $release->id,
+            'user_id' => $user->id,
+            'comment' => $validated['comment'],
+        ]);
+
+        return response()->json($comment->load('user:id,name'), 201);
+    }
+
+    private function canManageRelease(Request $request, Release $release): bool
+    {
+        $user = $request->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        return $user->artist?->id === $release->artist_id;
     }
 }
