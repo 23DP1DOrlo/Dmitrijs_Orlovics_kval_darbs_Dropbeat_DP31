@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('release_stats', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('release_id')->constrained()->cascadeOnDelete();
+            // Keep portable across DBs where migration order can differ.
+            $table->foreignId('release_id');
             $table->unsignedBigInteger('stream_count')->default(0);
             $table->unsignedBigInteger('like_count')->default(0);
             $table->unsignedBigInteger('share_count')->default(0);

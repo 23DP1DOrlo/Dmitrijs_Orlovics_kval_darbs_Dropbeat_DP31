@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { Link } from "react-router-dom";
 
 export function MyReleasesPage({ user }) {
   const [rows, setRows] = useState([]);
@@ -27,9 +28,11 @@ export function MyReleasesPage({ user }) {
       <div className="release-grid">
         {rows.map((item) => (
           <article className="card" key={item.id}>
+            {item.cover_url && <img className="cover-image" src={item.cover_url} alt={item.title} />}
             <h3>{item.title}</h3>
             <p>{item.genre?.name}</p>
             <small>{item.release_date} | {item.type.toUpperCase()}</small>
+            <p><Link to={`/releases/${item.id}`}>Atvert relizi</Link></p>
           </article>
         ))}
       </div>

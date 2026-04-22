@@ -14,8 +14,19 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root[data-theme="light"] {
+  --text: #262838;
+  --text-h: #0f1120;
+  --bg: #f4f6ff;
+  --border: #ccd3ea;
+  --shadow: rgba(13, 20, 42, 0.15) 0 10px 25px -12px;
+}
+
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 #root {

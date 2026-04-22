@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const defaultFilter = { q: "", genre_id: "", type: "", sort_by: "release_date", sort_dir: "desc" };
 const emptyForm = {
@@ -14,6 +14,7 @@ const emptyForm = {
 };
 
 export function ReleasesPage({ user }) {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [genres, setGenres] = useState([]);
   const [filter, setFilter] = useState(defaultFilter);
@@ -22,8 +23,16 @@ export function ReleasesPage({ user }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [ratings, setRatings] = useState({});
-  const [ratedReleaseIds, setRatedReleaseIds] = useState([]);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  const canManageRelease = (item) => {
+    if (!user) return false;
+    if (user.role === "admin") return true;
+    if (user.role === "artist") {
+      return item.artist?.user_id === user.id;
+    }
+    return false;
+  };
 
   const loadGenres = async () => {
     try {
@@ -73,9 +82,11 @@ export function ReleasesPage({ user }) {
       if (editId) {
         await api.put(`/releases/${editId}`, payload);
         setMessage("Relize veiksmigi atjaunota.");
+        window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Relize atjaunota" } }));
       } else {
         await api.post("/releases", payload);
         setMessage("Relize veiksmigi pievienota.");
+        window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Relize pievienota" } }));
       }
 
       setEditId(null);
@@ -88,6 +99,7 @@ export function ReleasesPage({ user }) {
         setError(firstError ?? "Neizdevas saglabat relizi.");
       } else {
         setError(requestError?.response?.data?.message ?? "Neizdevas saglabat relizi.");
+        window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "error", message: "Kluda: relize netika saglabata" } }));
       }
     } finally {
       setSubmitting(false);
@@ -113,42 +125,29 @@ export function ReleasesPage({ user }) {
     try {
       await api.delete(`/releases/${id}`);
       setMessage("Relize dzesta.");
+      window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Relize dzesta" } }));
       loadReleases();
     } catch (requestError) {
       setError(requestError?.response?.data?.message ?? "Neizdevas dzest relizi.");
     }
   };
 
-  const updateRatingField = (releaseId, key, value) => {
-    setRatings((prev) => ({
-      ...prev,
-      [releaseId]: {
-        rhymes_images: 5,
-        structure_rhythm: 5,
-        style_execution: 5,
-        individuality_charisma: 5,
-        ...(prev[releaseId] ?? {}),
-        [key]: Number(value),
-      },
-    }));
-  };
-
-  const submitRating = async (releaseId) => {
+  const uploadCoverFile = async (file) => {
+    if (!file) return;
+    setUploadingCover(true);
     setError("");
-    setMessage("");
     try {
-      const payload = ratings[releaseId] ?? {
-        rhymes_images: 5,
-        structure_rhythm: 5,
-        style_execution: 5,
-        individuality_charisma: 5,
-      };
-      await api.post(`/releases/${releaseId}/rate`, payload);
-      setMessage("Novertejums saglabats.");
-      setRatedReleaseIds((prev) => [...new Set([...prev, releaseId])]);
-      loadReleases();
+      const formData = new FormData();
+      formData.append("cover", file);
+      const { data } = await api.post("/releases/upload-cover", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setForm((prev) => ({ ...prev, cover_url: data.cover_url }));
+      window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Oblozka augshupieladeta" } }));
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas saglabat novertejumu.");
+      setError(requestError?.response?.data?.message ?? "Neizdevas augshupieladet oblozku.");
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -186,33 +185,33 @@ export function ReleasesPage({ user }) {
 
       <div className="release-grid">
         {items.map((item) => (
-          <article key={item.id} className="card">
+          <article
+            key={item.id}
+            className="card clickable-card"
+            onClick={() => navigate(`/releases/${item.id}`)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                navigate(`/releases/${item.id}`);
+              }
+            }}
+          >
             {item.cover_url && <img className="cover-image" src={item.cover_url} alt={item.title} />}
             <h3>{item.title}</h3>
-            <Link to={`/releases/${item.id}`}>Atvert relizes lapu</Link>
             <p>{item.artist?.stage_name} - {item.genre?.name}</p>
             <small>{item.release_date} | {item.type.toUpperCase()}</small>
             <p className="small-text">
               Reitings ({item.ratings_count ?? 0}): R/O {Number(item.avg_rhymes_images ?? 0).toFixed(1)}, S/R {Number(item.avg_structure_rhythm ?? 0).toFixed(1)}, Stils {Number(item.avg_style_execution ?? 0).toFixed(1)}, Harizma {Number(item.avg_individuality_charisma ?? 0).toFixed(1)}
             </p>
             {item.description && <p className="small-text">{item.description}</p>}
-            {user && (user.role === "admin" || user.role === "artist") && (
+            {canManageRelease(item) && (
               <div className="row-actions">
-                <button type="button" onClick={() => onEdit(item)}>Rediget</button>
-                <button type="button" className="danger" onClick={() => onDelete(item.id)}>Dzest</button>
+                <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(item); }}>Rediget</button>
+                <button type="button" className="danger" onClick={(event) => { event.stopPropagation(); onDelete(item.id); }}>Dzest</button>
               </div>
             )}
-            {user?.role === "listener" && (
-              <div className="rating-grid">
-                <label>Rifmas / Obrazi <input type="range" min="1" max="10" defaultValue="5" onChange={(e) => updateRatingField(item.id, "rhymes_images", e.target.value)} /></label>
-                <label>Struktura / Ritmika <input type="range" min="1" max="10" defaultValue="5" onChange={(e) => updateRatingField(item.id, "structure_rhythm", e.target.value)} /></label>
-                <label>Stila realizacija <input type="range" min="1" max="10" defaultValue="5" onChange={(e) => updateRatingField(item.id, "style_execution", e.target.value)} /></label>
-                <label>Individualitate / Harizma <input type="range" min="1" max="10" defaultValue="5" onChange={(e) => updateRatingField(item.id, "individuality_charisma", e.target.value)} /></label>
-                <button type="button" disabled={ratedReleaseIds.includes(item.id)} onClick={() => submitRating(item.id)}>
-                  {ratedReleaseIds.includes(item.id) ? "Jau novertets" : "Saglabat novertejumu"}
-                </button>
-              </div>
-            )}
+            {user?.role === "listener" && <p className="small-text">Novertejumu un komentaru vari pievienot relizes detalizetaja lapa.</p>}
           </article>
         ))}
       </div>
@@ -240,6 +239,9 @@ export function ReleasesPage({ user }) {
               onChange={(e) => setForm((p) => ({ ...p, cover_url: e.target.value }))}
               required
             />
+            <input type="file" accept="image/*" onChange={(e) => uploadCoverFile(e.target.files?.[0])} />
+            {uploadingCover && <p className="small-text">Augshupielade...</p>}
+            {form.cover_url && <img className="cover-preview" src={form.cover_url} alt="cover preview" />}
             <input
               placeholder="Ilgums sekundes (piemeram 180)"
               value={form.duration_seconds}

@@ -42,4 +42,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ReleaseRating::class);
     }
+
+    public function releaseComments(): HasMany
+    {
+        return $this->hasMany(ReleaseComment::class);
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\ReleaseStat;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ReleaseController extends Controller
 {
@@ -29,10 +30,16 @@ class ReleaseController extends Controller
         $query = Release::query()
             ->with(['artist', 'genre', 'stats'])
             ->withCount('ratings')
+            ->withCount('comments')
             ->withAvg('ratings as avg_rhymes_images', 'rhymes_images')
             ->withAvg('ratings as avg_structure_rhythm', 'structure_rhythm')
             ->withAvg('ratings as avg_style_execution', 'style_execution')
             ->withAvg('ratings as avg_individuality_charisma', 'individuality_charisma');
+
+        if ($request->user()?->role === 'listener') {
+            $listenerId = $request->user()->id;
+            $query->withExists(['ratings as has_user_rated' => fn ($q) => $q->where('user_id', $listenerId)]);
+        }
 
         if (! empty($validated['q'])) {
             $term = $validated['q'];
@@ -83,18 +90,29 @@ class ReleaseController extends Controller
 
     public function show(Release $release)
     {
-        return $release
-            ->load([
-                'artist.profile',
-                'genre',
-                'stats',
-                'comments.user:id,name',
-            ])
+        $release->load([
+            'artist.profile',
+            'genre',
+            'stats',
+            'comments' => fn ($q) => $q->latest(),
+            'comments.user:id,name',
+        ])
             ->loadCount('ratings')
             ->loadAvg('ratings as avg_rhymes_images', 'rhymes_images')
             ->loadAvg('ratings as avg_structure_rhythm', 'structure_rhythm')
             ->loadAvg('ratings as avg_style_execution', 'style_execution')
             ->loadAvg('ratings as avg_individuality_charisma', 'individuality_charisma');
+
+        $user = request()->user();
+        if ($user?->role === 'listener') {
+            $hasRated = ReleaseRating::where('release_id', $release->id)
+                ->where('user_id', $user->id)
+                ->exists();
+            $release->setAttribute('has_user_rated', $hasRated);
+        }
+
+        return $release
+            ;
     }
 
     public function update(Request $request, Release $release)
@@ -215,6 +233,24 @@ class ReleaseController extends Controller
         ]);
 
         return response()->json($comment->load('user:id,name'), 201);
+    }
+
+    public function uploadCover(Request $request)
+    {
+        $user = $request->user();
+        if (! $user || ! in_array($user->role, ['artist', 'admin'], true)) {
+            return response()->json(['message' => 'Oblozku var augshupladet tikai makslinieks vai administrators.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $validated = $request->validate([
+            'cover' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $path = $validated['cover']->store('covers', 'public');
+
+        return response()->json([
+            'cover_url' => url(Storage::url($path)),
+        ], 201);
     }
 
     private function canManageRelease(Request $request, Release $release): bool

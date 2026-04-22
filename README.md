@@ -17,6 +17,31 @@ php artisan serve
 
 Backend/API: `http://127.0.0.1:8000`
 
+## Deploy (production DB)
+
+Deploy vidē nepārej uz `sqlite` failu režīmu, izmanto servera DB (`mysql` vai `pgsql`):
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=dropbeat
+DB_USERNAME=dropbeat_user
+DB_PASSWORD=strong_password
+```
+
+Pēc deploy:
+
+```bash
+cd backend/DropbeatApi
+php artisan optimize:clear
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+```
+
+Svarīgi: production vidē neizmanto `php artisan migrate:fresh`.
+
 ## 2) Frontend
 
 Atver jaunu termināli:

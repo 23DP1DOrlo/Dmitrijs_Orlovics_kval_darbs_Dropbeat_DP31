@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import { Link } from "react-router-dom";
 
 export function DashboardPage({ user }) {
   const [rows, setRows] = useState([]);
@@ -39,9 +40,11 @@ export function DashboardPage({ user }) {
       <div className="release-grid">
         {latest.slice(0, 6).map((item) => (
           <article key={item.id} className="card">
+            {item.cover_url && <img className="cover-image" src={item.cover_url} alt={item.title} />}
             <h3>{item.title}</h3>
             <p>{item.artist?.stage_name} - {item.genre?.name}</p>
             <small>{item.release_date}</small>
+            <p><Link to={`/releases/${item.id}`}>Atvert relizi</Link></p>
           </article>
         ))}
       </div>

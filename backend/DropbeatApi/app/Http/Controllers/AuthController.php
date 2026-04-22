@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Artist;
 use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password as PasswordBroker;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -61,5 +65,70 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()?->delete();
         return response()->json(['message' => 'Veiksmīgi atslēdzies']);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $status = PasswordBroker::sendResetLink(['email' => $validated['email']]);
+
+        if ($status === PasswordBroker::RESET_LINK_SENT) {
+            return response()->json(['message' => 'Paroles atjaunosanas saite nosutita uz e-pastu.']);
+        }
+
+        // Do not disclose whether e-mail exists in system.
+        return response()->json(['message' => 'Ja e-pasts eksiste, atjaunosanas saite ir nosutita.']);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+        ]);
+
+        $status = PasswordBroker::reset(
+            $validated,
+            function (User $user, string $password): void {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status === PasswordBroker::PASSWORD_RESET) {
+            return response()->json(['message' => 'Parole veiksmigi atjaunota.']);
+        }
+
+        return response()->json(['message' => 'Neizdevas atjaunot paroli.'], 422);
+    }
+
+    public function me(Request $request)
+    {
+        return $request->user();
+    }
+
+    public function updateMe(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'min:2', 'max:120'],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+        ]);
+
+        $user->update([
+            'name' => $validated['name'] ?? $user->name,
+            'email' => $validated['email'] ?? $user->email,
+        ]);
+
+        return $user->fresh();
     }
 }

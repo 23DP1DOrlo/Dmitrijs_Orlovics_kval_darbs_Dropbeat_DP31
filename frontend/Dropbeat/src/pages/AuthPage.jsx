@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api";
+import { Link } from "react-router-dom";
 
 export function AuthPage({ onAuth }) {
   const [mode, setMode] = useState("login");
@@ -44,39 +45,43 @@ export function AuthPage({ onAuth }) {
   };
 
   return (
-    <section className="panel">
-      <h2>{mode === "login" ? "Pieslegsanas" : "Registracija"}</h2>
-      <form className="form-grid" onSubmit={submit}>
-        {mode === "register" && (
-          <>
-            <input placeholder="Vards" value={form.name} onChange={(e) => update("name", e.target.value)} />
+    <div className="auth-screen">
+      <section className="panel auth-panel">
+        <h2>{mode === "login" ? "Pieslegsanas" : "Registracija"}</h2>
+        <form className="form-grid" onSubmit={submit}>
+          {mode === "register" && (
+            <>
+              <input placeholder="Vards" value={form.name} onChange={(e) => update("name", e.target.value)} />
+              <input
+                placeholder="Skatuves vards"
+                value={form.stage_name}
+                onChange={(e) => update("stage_name", e.target.value)}
+              />
+              <select value={form.role} onChange={(e) => update("role", e.target.value)}>
+                <option value="artist">Makslinieks</option>
+                <option value="listener">Klausitajs</option>
+              </select>
+              <p className="small-text">Izvelies lomu: artist vai listener.</p>
+            </>
+          )}
+          <input type="email" placeholder="E-pasts" value={form.email} onChange={(e) => update("email", e.target.value)} />
+          <input type="password" placeholder="Parole" value={form.password} onChange={(e) => update("password", e.target.value)} />
+          {mode === "register" && (
             <input
-              placeholder="Skatuves vards"
-              value={form.stage_name}
-              onChange={(e) => update("stage_name", e.target.value)}
+              type="password"
+              placeholder="Atkartot paroli"
+              value={form.password_confirmation}
+              onChange={(e) => update("password_confirmation", e.target.value)}
             />
-            <select value={form.role} onChange={(e) => update("role", e.target.value)}>
-              <option value="artist">Makslinieks</option>
-              <option value="listener">Klausitajs</option>
-            </select>
-          </>
-        )}
-        <input type="email" placeholder="E-pasts" value={form.email} onChange={(e) => update("email", e.target.value)} />
-        <input type="password" placeholder="Parole" value={form.password} onChange={(e) => update("password", e.target.value)} />
-        {mode === "register" && (
-          <input
-            type="password"
-            placeholder="Atkartot paroli"
-            value={form.password_confirmation}
-            onChange={(e) => update("password_confirmation", e.target.value)}
-          />
-        )}
-        <button type="submit" disabled={loading}>{mode === "login" ? "Ienakt" : "Izveidot kontu"}</button>
-      </form>
-      {error && <p className="error">{error}</p>}
-      <button className="link-btn" onClick={() => setMode((prev) => (prev === "login" ? "register" : "login"))}>
-        {mode === "login" ? "Nav konta? Registreties" : "Jau ir konts? Pieslegties"}
-      </button>
-    </section>
+          )}
+          <button type="submit" disabled={loading}>{mode === "login" ? "Ienakt" : "Izveidot kontu"}</button>
+        </form>
+        {error && <p className="error">{error}</p>}
+        {mode === "login" && <Link to="/forgot-password">Aizmirsu paroli</Link>}
+        <button className="link-btn" onClick={() => setMode((prev) => (prev === "login" ? "register" : "login"))}>
+          {mode === "login" ? "Nav konta? Registreties" : "Jau ir konts? Pieslegties"}
+        </button>
+      </section>
+    </div>
   );
 }
