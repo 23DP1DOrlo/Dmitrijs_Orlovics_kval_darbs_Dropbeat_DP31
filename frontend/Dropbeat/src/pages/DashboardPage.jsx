@@ -3,7 +3,7 @@ import { api } from "../api";
 import { useNavigate } from "react-router-dom";
 import { CoverImage } from "../components/CoverImage";
 
-export function DashboardPage({ user }) {
+export function DashboardPage({ user, t = (key, fallback) => fallback }) {
   const [rows, setRows] = useState([]);
   const [latest, setLatest] = useState([]);
   const [overview, setOverview] = useState(null);
@@ -50,21 +50,21 @@ export function DashboardPage({ user }) {
 
   return (
     <section className="panel">
-      <h2>Dashboard</h2>
-      <p className="muted">Sveiks, {user?.name ?? "viesis"}! Seit ir projekta galvena atskaite.</p>
+      <h2>{t("pages.dashboard.title", "Dashboard")}</h2>
+      <p className="muted">{t("pages.dashboard.welcome", "Sveiks")}, {user?.name ?? t("common.guest", "viesis")}! {t("pages.dashboard.subtitle", "Seit ir projekta galvena atskaite.")}</p>
 
       <div className="kpi-grid dashboard-kpi-grid">
-        <article className="card kpi-card-3d"><h3>{overview?.totals?.releases ?? 0}</h3><p>Kopējais relīžu skaits</p></article>
-        <article className="card kpi-card-3d"><h3>{overview?.totals?.users ?? 0}</h3><p>Lietotaji platforma</p></article>
-        <article className="card kpi-card-3d"><h3>{overview?.totals?.comments ?? 0}</h3><p>Komentari</p></article>
-        <article className="card kpi-card-3d"><h3>{overview?.totals?.ratings ?? 0}</h3><p>Novertejumi</p></article>
+        <article className="card kpi-card-3d"><h3>{overview?.totals?.releases ?? 0}</h3><p>{t("pages.dashboard.kpiReleases", "Kopējais relīžu skaits")}</p></article>
+        <article className="card kpi-card-3d"><h3>{overview?.totals?.users ?? 0}</h3><p>{t("pages.dashboard.kpiUsers", "Lietotaji platforma")}</p></article>
+        <article className="card kpi-card-3d"><h3>{overview?.totals?.comments ?? 0}</h3><p>{t("pages.dashboard.kpiComments", "Komentari")}</p></article>
+        <article className="card kpi-card-3d"><h3>{overview?.totals?.ratings ?? 0}</h3><p>{t("pages.dashboard.kpiRatings", "Novertejumi")}</p></article>
       </div>
-      {loadingOverview && <p className="small-text">Ieladejam realo statistiku no datubazes...</p>}
-      {!loadingOverview && !overview?.totals && <p className="error">Neizdevas ieladet statistiku no datubazes.</p>}
+      {loadingOverview && <p className="small-text">{t("pages.dashboard.loading", "Ieladejam realo statistiku no datubazes...")}</p>}
+      {!loadingOverview && !overview?.totals && <p className="error">{t("pages.dashboard.loadError", "Neizdevas ieladet statistiku no datubazes.")}</p>}
 
       <section className="upcoming-shell">
         <div className="upcoming-head">
-          <h3>Upcoming Releases</h3>
+          <h3>{t("pages.dashboard.upcoming", "Upcoming Releases")}</h3>
         </div>
         <div className="upcoming-grid">
           {upcoming.map((item) => (
@@ -82,11 +82,11 @@ export function DashboardPage({ user }) {
               </div>
             </article>
           ))}
-          {upcoming.length === 0 && <p className="muted">Pagaidam nav relizu ar nakotnes datumu.</p>}
+          {upcoming.length === 0 && <p className="muted">{t("pages.dashboard.noUpcoming", "Pagaidam nav relizu ar nakotnes datumu.")}</p>}
         </div>
       </section>
 
-      <h3>Jaunākās relīzes</h3>
+      <h3>{t("pages.dashboard.latest", "Jaunākās relīzes")}</h3>
       <div className="release-grid">
         {latest.slice(0, 6).map((item) => (
           <article key={item.id} className="card clickable-card" onClick={() => navigate(`/releases/${item.id}`)}>

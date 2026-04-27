@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api";
 
-export function ResetPasswordPage() {
+export function ResetPasswordPage({ t = (key, fallback) => fallback }) {
   const [searchParams] = useSearchParams();
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -37,8 +37,8 @@ export function ResetPasswordPage() {
     return (
       <div className="auth-screen">
         <section className="panel auth-panel compact-auth-panel">
-          <h2>Paroles atjaunosana</h2>
-          <p className="error auth-message">Nederiga atjaunosanas saite. Pieprasi jaunu saiti velreiz.</p>
+          <h2>{t("auth.resetTitle", "Paroles atjaunosana")}</h2>
+          <p className="error auth-message">{t("auth.invalidResetLink", "Nederiga atjaunosanas saite. Pieprasi jaunu saiti velreiz.")}</p>
         </section>
       </div>
     );
@@ -48,26 +48,26 @@ export function ResetPasswordPage() {
     <div className="auth-screen">
       <section className="panel auth-panel compact-auth-panel">
         <header className="auth-head">
-          <p className="tag">Security</p>
-          <h2>Iestati jaunu paroli</h2>
+          <p className="tag">{t("auth.security", "Security")}</p>
+          <h2>{t("auth.setNewPassword", "Iestati jaunu paroli")}</h2>
           <p className="muted">{email}</p>
         </header>
         <form className="form-grid auth-form-grid single-column" onSubmit={submit}>
           <input
             type="password"
-            placeholder="Jauna parole"
+            placeholder={t("auth.newPassword", "Jauna parole")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
           <input
             type="password"
-            placeholder="Atkartot jauno paroli"
+            placeholder={t("auth.repeatNewPassword", "Atkartot jauno paroli")}
             value={passwordConfirmation}
             onChange={(e) => setPasswordConfirmation(e.target.value)}
             required
           />
-          <button type="submit" disabled={loading}>{loading ? "Saglabaju..." : "Saglabat paroli"}</button>
+          <button type="submit" disabled={loading}>{loading ? t("auth.saving", "Saglabaju...") : t("auth.savePassword", "Saglabat paroli")}</button>
         </form>
         {message && <p className="ok auth-message">{message}</p>}
         {error && <p className="error auth-message">{error}</p>}

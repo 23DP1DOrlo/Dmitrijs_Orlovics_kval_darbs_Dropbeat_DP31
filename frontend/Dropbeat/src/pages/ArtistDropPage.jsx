@@ -18,7 +18,10 @@ const emptyDuration = { hours: "", minutes: "", seconds: "" };
 
 export function ArtistDropPage({ user }) {
   const [genres, setGenres] = useState([]);
+  const [artists, setArtists] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [selectedArtistId, setSelectedArtistId] = useState("");
+  const [collaboratorIds, setCollaboratorIds] = useState([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +48,22 @@ export function ArtistDropPage({ user }) {
     api.get("/genres")
       .then(({ data }) => setGenres(data))
       .catch(() => setError("Neizdevas ieladet zanrus."));
+
+    api.get("/artists")
+      .then(({ data }) => setArtists(data))
+      .catch(() => setError("Neizdevas ieladet maksliniekus."));
   }, []);
+
+  useEffect(() => {
+    if (!artists.length || !user?.id) {
+      return;
+    }
+
+    const currentArtist = artists.find((artist) => artist.user_id === user.id);
+    if (currentArtist) {
+      setCollaboratorIds((prev) => (prev.includes(currentArtist.id) ? prev : [currentArtist.id, ...prev].slice(0, 7)));
+    }
+  }, [artists, user?.id]);
 
   const isOtherGenreSelected = genres.find((genre) => String(genre.id) === String(form.genre_id))?.name === "Other";
 
@@ -94,6 +112,7 @@ export function ArtistDropPage({ user }) {
       custom_genre_name: form.custom_genre_name?.trim() ? form.custom_genre_name.trim() : null,
       duration_seconds: totalDuration > 0 ? totalDuration : null,
       is_published: true,
+      artist_ids: collaboratorIds,
     };
 
     try {
@@ -105,10 +124,17 @@ export function ArtistDropPage({ user }) {
         setError("Ja izvelies Other, ieraksti savu zanru.");
         return;
       }
+      if (!payload.artist_ids.length) {
+        setError("Pievieno vismaz vienu makslinieku relizei.");
+        return;
+      }
 
       await api.post("/releases", payload);
       setMessage("Relize veiksmigi pievienota.");
       setForm(emptyForm);
+      setSelectedArtistId("");
+      const currentArtist = artists.find((artist) => artist.user_id === user?.id);
+      setCollaboratorIds(currentArtist ? [currentArtist.id] : []);
       setDuration(emptyDuration);
       setSelectedCoverPreview("");
       window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Relize pievienota" } }));
@@ -150,6 +176,55 @@ export function ArtistDropPage({ user }) {
             <option key={genre.id} value={genre.id}>{genre.name}</option>
           ))}
         </select>
+        <div className="collaborator-picker">
+          <label htmlFor="artist-collab-select">Kopdarba makslinieki (lidz 7)</label>
+          <div className="collaborator-picker-row">
+            <select
+              id="artist-collab-select"
+              value={selectedArtistId}
+              onChange={(e) => setSelectedArtistId(e.target.value)}
+            >
+              <option value="">Izvelies makslinieku</option>
+              {artists
+                .filter((artist) => !collaboratorIds.includes(artist.id))
+                .map((artist) => (
+                  <option key={artist.id} value={artist.id}>
+                    {artist.stage_name}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedArtistId || collaboratorIds.length >= 7) return;
+                setCollaboratorIds((prev) => [...prev, Number(selectedArtistId)]);
+                setSelectedArtistId("");
+              }}
+              disabled={!selectedArtistId || collaboratorIds.length >= 7}
+            >
+              + Pievienot artistu
+            </button>
+          </div>
+          <div className="collaborator-tags">
+            {collaboratorIds.map((artistId, index) => {
+              const artist = artists.find((item) => item.id === artistId);
+              if (!artist) return null;
+              return (
+                <span className="collaborator-tag" key={artistId}>
+                  {index === 0 ? "Primary: " : ""}{artist.stage_name}
+                  <button
+                    type="button"
+                    onClick={() => setCollaboratorIds((prev) => prev.filter((id) => id !== artistId))}
+                    disabled={index === 0 && artist.user_id === user?.id}
+                    title={index === 0 && artist.user_id === user?.id ? "Galveno autoru nevar noņemt" : "Noņemt"}
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
         {isOtherGenreSelected && (
           <input
             placeholder="Ieraksti savu zanru"

@@ -3,7 +3,7 @@ import { api } from "../api";
 import { useNavigate } from "react-router-dom";
 import { CoverImage } from "../components/CoverImage";
 
-export function LiveFeedPage() {
+export function LiveFeedPage({ t = (key, fallback) => fallback }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
 
@@ -15,8 +15,8 @@ export function LiveFeedPage() {
 
   return (
     <section className="panel">
-      <h2>Live Feed</h2>
-      <p className="muted">Jaunakas aktivitates platforma.</p>
+      <h2>{t("pages.liveFeed.title", "Live Feed")}</h2>
+      <p className="muted">{t("pages.liveFeed.subtitle", "Jaunakas aktivitates platforma.")}</p>
       <div className="timeline">
         {rows.slice(0, 12).map((item) => (
           <article className="card clickable-card" key={item.id} onClick={() => navigate(`/releases/${item.id}`)}>
@@ -24,7 +24,7 @@ export function LiveFeedPage() {
             <p className="tag">{item.type}</p>
             <h3>{item.title}</h3>
             <p>{item.artist?.stage_name}</p>
-            <small>Publicets: {item.created_at?.slice(0, 10) ?? "n/a"}</small>
+            <small>{t("pages.liveFeed.published", "Publicets")}: {item.created_at?.slice(0, 10) ?? "n/a"}</small>
           </article>
         ))}
       </div>

@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ReleaseController extends Controller
 {
@@ -29,7 +31,7 @@ class ReleaseController extends Controller
         ]);
 
         $query = Release::query()
-            ->with(['artist', 'genre', 'stats'])
+            ->with(['artist', 'artists', 'genre', 'stats'])
             ->withCount('ratings')
             ->withCount('comments')
             ->withAvg('ratings as avg_rhymes_images', 'rhymes_images')
@@ -48,13 +50,18 @@ class ReleaseController extends Controller
                 $subQuery
                     ->where('title', 'like', "%{$term}%")
                     ->orWhereHas('artist', fn ($artistQuery) => $artistQuery->where('stage_name', 'like', "%{$term}%"))
+                    ->orWhereHas('artists', fn ($artistQuery) => $artistQuery->where('stage_name', 'like', "%{$term}%"))
                     ->orWhereHas('genre', fn ($genreQuery) => $genreQuery->where('name', 'like', "%{$term}%"));
             });
         }
 
         $query
             ->when(isset($validated['genre_id']), fn ($q) => $q->where('genre_id', $validated['genre_id']))
-            ->when(isset($validated['artist_id']), fn ($q) => $q->where('artist_id', $validated['artist_id']))
+            ->when(isset($validated['artist_id']), fn ($q) => $q->where(function ($artistQuery) use ($validated) {
+                $artistQuery
+                    ->where('artist_id', $validated['artist_id'])
+                    ->orWhereHas('artists', fn ($q) => $q->where('artists.id', $validated['artist_id']));
+            }))
             ->when(isset($validated['type']), fn ($q) => $q->where('type', $validated['type']))
             ->when(isset($validated['published']), fn ($q) => $q->where('is_published', $validated['published']))
             ->when(isset($validated['from_date']), fn ($q) => $q->whereDate('release_date', '>=', $validated['from_date']))
@@ -78,6 +85,8 @@ class ReleaseController extends Controller
             'cover_url' => ['required', 'url'],
             'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:86400'],
             'is_published' => ['boolean'],
+            'artist_ids' => ['nullable', 'array', 'min:1', 'max:7'],
+            'artist_ids.*' => ['integer', 'distinct', Rule::exists('artists', 'id')],
         ]);
 
         $artist = $request->user()?->artist;
@@ -85,18 +94,30 @@ class ReleaseController extends Controller
             return response()->json(['message' => 'Relizi var pievienot tikai makslinieks vai administrators.'], Response::HTTP_FORBIDDEN);
         }
 
-        $validated['artist_id'] = $artist?->id ?? $request->integer('artist_id');
+        $artistIds = $this->resolveArtistIds($request, $artist?->id);
+        $validated['artist_id'] = $artistIds[0] ?? $artist?->id ?? $request->integer('artist_id');
         $validated['custom_genre_name'] = isset($validated['custom_genre_name']) ? trim($validated['custom_genre_name']) : null;
         // For pgsql + pooler setups, force boolean literal to avoid integer binding (1/0) mismatch.
         $validated['is_published'] = $request->boolean('is_published') ? 'true' : 'false';
 
-        return response()->json(Release::create($validated)->load(['artist', 'genre'])->loadCount('ratings'), 201);
+        unset($validated['artist_ids']);
+
+        return DB::transaction(function () use ($validated, $artistIds) {
+            $release = Release::create($validated);
+            $this->syncReleaseArtists($release, $artistIds);
+
+            return response()->json(
+                $release->fresh()->load(['artist', 'artists', 'genre'])->loadCount('ratings'),
+                201
+            );
+        });
     }
 
     public function show(Release $release)
     {
         $release->load([
             'artist.profile',
+            'artists.profile',
             'genre',
             'stats',
             'comments' => fn ($q) => $q->latest(),
@@ -140,6 +161,8 @@ class ReleaseController extends Controller
             'cover_url' => ['sometimes', 'url'],
             'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:86400'],
             'is_published' => ['boolean'],
+            'artist_ids' => ['sometimes', 'array', 'min:1', 'max:7'],
+            'artist_ids.*' => ['integer', 'distinct', Rule::exists('artists', 'id')],
         ]);
 
         unset($validated['artist_id']);
@@ -152,8 +175,23 @@ class ReleaseController extends Controller
         if (array_key_exists('is_published', $validated)) {
             $validated['is_published'] = $request->boolean('is_published') ? 'true' : 'false';
         }
-        $release->update($validated);
-        return $release->fresh()->load(['artist', 'genre']);
+        $artistIds = null;
+        if ($request->has('artist_ids')) {
+            $artistIds = $this->resolveArtistIds($request);
+            $validated['artist_id'] = $artistIds[0];
+        }
+
+        unset($validated['artist_ids']);
+
+        DB::transaction(function () use ($release, $validated, $artistIds) {
+            $release->update($validated);
+
+            if (is_array($artistIds)) {
+                $this->syncReleaseArtists($release, $artistIds);
+            }
+        });
+
+        return $release->fresh()->load(['artist', 'artists', 'genre']);
     }
 
     public function destroy(Release $release)
@@ -353,6 +391,45 @@ class ReleaseController extends Controller
             return true;
         }
 
-        return $user->artist?->id === $release->artist_id;
+        return $release->artists()
+            ->where('artists.id', $user->artist?->id)
+            ->exists();
+    }
+
+    private function resolveArtistIds(Request $request, ?int $fallbackArtistId = null): array
+    {
+        $artistIds = $request->input('artist_ids');
+
+        if (is_array($artistIds) && ! empty($artistIds)) {
+            return array_values(array_map('intval', $artistIds));
+        }
+
+        if ($fallbackArtistId) {
+            return [$fallbackArtistId];
+        }
+
+        $artistId = $request->integer('artist_id');
+        if ($artistId) {
+            return [$artistId];
+        }
+
+        throw ValidationException::withMessages([
+            'artist_ids' => ['Janonorada vismaz viens makslinieks.'],
+        ]);
+    }
+
+    private function syncReleaseArtists(Release $release, array $artistIds): void
+    {
+        $artistIds = array_values(array_unique(array_map('intval', $artistIds)));
+
+        $syncPayload = [];
+        foreach ($artistIds as $index => $artistId) {
+            $syncPayload[$artistId] = [
+                'is_primary' => $index === 0 ? 'true' : 'false',
+                'credit_order' => $index + 1,
+            ];
+        }
+
+        $release->artists()->sync($syncPayload);
     }
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { Link } from "react-router-dom";
 
-export function DiscoverPage() {
+export function DiscoverPage({ t = (key, fallback) => fallback }) {
   const [rows, setRows] = useState([]);
   const formatDuration = (durationSeconds) => {
     const total = Number(durationSeconds ?? 0);
@@ -22,15 +22,15 @@ export function DiscoverPage() {
 
   return (
     <section className="panel">
-      <h2>Discover</h2>
-      <p className="muted">Atlasito relizu izlase klausitajiem un A&R komandai.</p>
+      <h2>{t("pages.discover.title", "Discover")}</h2>
+      <p className="muted">{t("pages.discover.subtitle", "Atlasito relizu izlase klausitajiem un A&R komandai.")}</p>
       <div className="release-grid">
         {rows.map((item) => (
           <article className="card" key={item.id}>
             {item.cover_url && <img className="cover-image" src={item.cover_url} alt={item.title} />}
             <p className="tag">{item.type}</p>
             <h3>{item.title}</h3>
-            <Link to={`/releases/${item.id}`}>Skatit detalas</Link>
+            <Link to={`/releases/${item.id}`}>{t("pages.discover.details", "Skatit detalas")}</Link>
             <p>{item.artist?.stage_name}</p>
             <small>{item.genre?.name} | {item.release_date} | {formatDuration(item.duration_seconds)}</small>
           </article>

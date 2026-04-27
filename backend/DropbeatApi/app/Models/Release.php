@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -31,6 +32,14 @@ class Release extends Model
     public function artist(): BelongsTo
     {
         return $this->belongsTo(Artist::class);
+    }
+
+    public function artists(): BelongsToMany
+    {
+        return $this->belongsToMany(Artist::class, 'release_artists')
+            ->withPivot(['is_primary', 'credit_order'])
+            ->withTimestamps()
+            ->orderBy('release_artists.credit_order');
     }
 
     public function genre(): BelongsTo
