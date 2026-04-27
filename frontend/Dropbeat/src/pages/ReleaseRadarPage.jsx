@@ -1,30 +1,35 @@
-import { useMemo } from "react";
-
-const radarData = [
-  { label: "Hip-Hop", value: 87 },
-  { label: "Electronic", value: 74 },
-  { label: "Lo-Fi", value: 65 },
-  { label: "Trap", value: 58 },
-  { label: "Pop", value: 41 },
-];
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../api";
 
 export function ReleaseRadarPage() {
-  const max = useMemo(() => Math.max(...radarData.map((d) => d.value)), []);
+  const [radarData, setRadarData] = useState([]);
+
+  useEffect(() => {
+    api.get("/stats/genres")
+      .then(({ data }) => setRadarData((data ?? []).slice(0, 8)))
+      .catch(() => setRadarData([]));
+  }, []);
+
+  const max = useMemo(() => {
+    if (!radarData.length) return 1;
+    return Math.max(...radarData.map((d) => Number(d.total_streams ?? 0)));
+  }, [radarData]);
 
   return (
     <section className="panel">
       <h2>Release Radar</h2>
-      <p className="muted">Tendenču panelis ar žanru aktivitāti.</p>
+      <p className="muted">Tendenču panelis ar realu zanru aktivitati no datubazes.</p>
       <div className="comment-list">
         {radarData.map((row) => (
-          <article className="card" key={row.label}>
-            <p>{row.label}</p>
+          <article className="card" key={row.genre}>
+            <p>{row.genre}</p>
             <div className="progress-shell">
-              <div className="progress-fill" style={{ width: `${(row.value / max) * 100}%` }} />
+              <div className="progress-fill" style={{ width: `${(Number(row.total_streams ?? 0) / max) * 100}%` }} />
             </div>
-            <small>{row.value} points</small>
+            <small>{Number(row.total_streams ?? 0)} streams • {Number(row.release_count ?? 0)} relizes</small>
           </article>
         ))}
+        {!radarData.length && <p className="muted">Nav datu radar panelim.</p>}
       </div>
     </section>
   );

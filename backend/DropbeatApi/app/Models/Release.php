@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'artist_id',
     'genre_id',
+    'custom_genre_name',
     'title',
     'release_date',
     'type',
@@ -20,6 +21,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Release extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'is_published' => 'boolean',
+        ];
+    }
+
     public function artist(): BelongsTo
     {
         return $this->belongsTo(Artist::class);

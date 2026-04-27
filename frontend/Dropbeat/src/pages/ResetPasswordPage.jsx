@@ -35,36 +35,43 @@ export function ResetPasswordPage() {
 
   if (!token || !email) {
     return (
-      <section className="panel auth-panel">
-        <h2>Paroles atjaunosana</h2>
-        <p className="error">Nederiga atjaunosanas saite. Pieprasi jaunu saiti velreiz.</p>
-      </section>
+      <div className="auth-screen">
+        <section className="panel auth-panel compact-auth-panel">
+          <h2>Paroles atjaunosana</h2>
+          <p className="error auth-message">Nederiga atjaunosanas saite. Pieprasi jaunu saiti velreiz.</p>
+        </section>
+      </div>
     );
   }
 
   return (
-    <section className="panel auth-panel">
-      <h2>Iestati jaunu paroli</h2>
-      <p className="muted">{email}</p>
-      <form className="form-grid" onSubmit={submit}>
-        <input
-          type="password"
-          placeholder="Jauna parole"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Atkartot jauno paroli"
-          value={passwordConfirmation}
-          onChange={(e) => setPasswordConfirmation(e.target.value)}
-          required
-        />
-        <button type="submit" disabled={loading}>{loading ? "Saglabaju..." : "Saglabat paroli"}</button>
-      </form>
-      {message && <p className="ok">{message}</p>}
-      {error && <p className="error">{error}</p>}
-    </section>
+    <div className="auth-screen">
+      <section className="panel auth-panel compact-auth-panel">
+        <header className="auth-head">
+          <p className="tag">Security</p>
+          <h2>Iestati jaunu paroli</h2>
+          <p className="muted">{email}</p>
+        </header>
+        <form className="form-grid auth-form-grid single-column" onSubmit={submit}>
+          <input
+            type="password"
+            placeholder="Jauna parole"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Atkartot jauno paroli"
+            value={passwordConfirmation}
+            onChange={(e) => setPasswordConfirmation(e.target.value)}
+            required
+          />
+          <button type="submit" disabled={loading}>{loading ? "Saglabaju..." : "Saglabat paroli"}</button>
+        </form>
+        {message && <p className="ok auth-message">{message}</p>}
+        {error && <p className="error auth-message">{error}</p>}
+      </section>
+    </div>
   );
 }

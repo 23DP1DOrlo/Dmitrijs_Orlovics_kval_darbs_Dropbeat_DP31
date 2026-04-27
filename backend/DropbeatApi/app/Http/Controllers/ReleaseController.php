@@ -6,6 +6,7 @@ use App\Models\Release;
 use App\Models\ReleaseComment;
 use App\Models\ReleaseRating;
 use App\Models\ReleaseStat;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -69,12 +70,13 @@ class ReleaseController extends Controller
     {
         $validated = $request->validate([
             'genre_id' => ['required', 'exists:genres,id'],
+            'custom_genre_name' => ['nullable', 'string', 'max:60'],
             'title' => ['required', 'string', 'min:2', 'max:150'],
             'release_date' => ['required', 'date'],
             'type' => ['required', 'in:single,ep,album'],
             'description' => ['nullable', 'string', 'max:1000'],
             'cover_url' => ['required', 'url'],
-            'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:7200'],
+            'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:86400'],
             'is_published' => ['boolean'],
         ]);
 
@@ -84,6 +86,9 @@ class ReleaseController extends Controller
         }
 
         $validated['artist_id'] = $artist?->id ?? $request->integer('artist_id');
+        $validated['custom_genre_name'] = isset($validated['custom_genre_name']) ? trim($validated['custom_genre_name']) : null;
+        // For pgsql + pooler setups, force boolean literal to avoid integer binding (1/0) mismatch.
+        $validated['is_published'] = $request->boolean('is_published') ? 'true' : 'false';
 
         return response()->json(Release::create($validated)->load(['artist', 'genre'])->loadCount('ratings'), 201);
     }
@@ -108,7 +113,11 @@ class ReleaseController extends Controller
             $hasRated = ReleaseRating::where('release_id', $release->id)
                 ->where('user_id', $user->id)
                 ->exists();
+            $hasCommented = ReleaseComment::where('release_id', $release->id)
+                ->where('user_id', $user->id)
+                ->exists();
             $release->setAttribute('has_user_rated', $hasRated);
+            $release->setAttribute('has_user_commented', $hasCommented);
         }
 
         return $release
@@ -123,18 +132,25 @@ class ReleaseController extends Controller
 
         $validated = $request->validate([
             'genre_id' => ['sometimes', 'exists:genres,id'],
+            'custom_genre_name' => ['nullable', 'string', 'max:60'],
             'title' => ['sometimes', 'string', 'min:2', 'max:150'],
             'release_date' => ['sometimes', 'date'],
             'type' => ['sometimes', 'in:single,ep,album'],
             'description' => ['nullable', 'string', 'max:1000'],
             'cover_url' => ['sometimes', 'url'],
-            'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:7200'],
+            'duration_seconds' => ['nullable', 'integer', 'min:30', 'max:86400'],
             'is_published' => ['boolean'],
         ]);
 
         unset($validated['artist_id']);
         if (! array_key_exists('cover_url', $validated)) {
             $validated['cover_url'] = $release->cover_url;
+        }
+        if (array_key_exists('custom_genre_name', $validated)) {
+            $validated['custom_genre_name'] = trim((string) $validated['custom_genre_name']) ?: null;
+        }
+        if (array_key_exists('is_published', $validated)) {
+            $validated['is_published'] = $request->boolean('is_published') ? 'true' : 'false';
         }
         $release->update($validated);
         return $release->fresh()->load(['artist', 'genre']);
@@ -183,6 +199,32 @@ class ReleaseController extends Controller
             ->get();
 
         return response()->json($summary);
+    }
+
+    public function statsOverview()
+    {
+        $totals = [
+            'releases' => Release::count(),
+            'users' => User::count(),
+            'comments' => ReleaseComment::count(),
+            'ratings' => ReleaseRating::count(),
+            'streams' => (int) ReleaseStat::sum('stream_count'),
+            'likes' => (int) ReleaseStat::sum('like_count'),
+            'shares' => (int) ReleaseStat::sum('share_count'),
+        ];
+
+        $topUsers = User::query()
+            ->withCount('releaseComments')
+            ->withCount('releaseRatings')
+            ->orderByDesc('release_comments_count')
+            ->orderByDesc('release_ratings_count')
+            ->limit(8)
+            ->get(['id', 'name', 'email', 'role']);
+
+        return response()->json([
+            'totals' => $totals,
+            'top_users' => $topUsers,
+        ]);
     }
 
     public function rate(Request $request, Release $release)
@@ -235,6 +277,51 @@ class ReleaseController extends Controller
         return response()->json($comment->load('user:id,name'), 201);
     }
 
+    public function submitFeedback(Request $request, Release $release)
+    {
+        $user = $request->user();
+        if (! $user || $user->role !== 'listener') {
+            return response()->json(['message' => 'Vertet un komentet var tikai klausitajs.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $alreadyRated = ReleaseRating::where('release_id', $release->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        $alreadyCommented = ReleaseComment::where('release_id', $release->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if ($alreadyRated || $alreadyCommented) {
+            return response()->json(['message' => 'Tu jau atstaji novertejumu un/vai komentaru sim relizam.'], Response::HTTP_CONFLICT);
+        }
+
+        $validated = $request->validate([
+            'rhymes_images' => ['required', 'integer', 'between:1,10'],
+            'structure_rhythm' => ['required', 'integer', 'between:1,10'],
+            'style_execution' => ['required', 'integer', 'between:1,10'],
+            'individuality_charisma' => ['required', 'integer', 'between:1,10'],
+            'comment' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($release, $user, $validated) {
+            ReleaseRating::create([
+                'release_id' => $release->id,
+                'user_id' => $user->id,
+                'rhymes_images' => $validated['rhymes_images'],
+                'structure_rhythm' => $validated['structure_rhythm'],
+                'style_execution' => $validated['style_execution'],
+                'individuality_charisma' => $validated['individuality_charisma'],
+            ]);
+
+            ReleaseComment::create([
+                'release_id' => $release->id,
+                'user_id' => $user->id,
+                'comment' => $validated['comment'],
+            ]);
+        });
+
+        return response()->json(['message' => 'Novertejums un komentars saglabati.'], 201);
+    }
+
     public function uploadCover(Request $request)
     {
         $user = $request->user();
@@ -247,9 +334,11 @@ class ReleaseController extends Controller
         ]);
 
         $path = $validated['cover']->store('covers', 'public');
+        $publicPath = Storage::url($path);
 
         return response()->json([
-            'cover_url' => url(Storage::url($path)),
+            // Build URL from current request host to avoid APP_URL mismatch (e.g. localhost:80).
+            'cover_url' => $request->getSchemeAndHttpHost().$publicPath,
         ], 201);
     }
 

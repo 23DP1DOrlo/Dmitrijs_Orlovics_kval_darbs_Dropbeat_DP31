@@ -23,15 +23,20 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <section className="panel auth-panel">
-      <h2>Paroles atjaunosana</h2>
-      <p className="muted">Ievadi savu e-pastu, un mes nosutisim paroles atjaunosanas saiti.</p>
-      <form className="form-grid" onSubmit={submit}>
-        <input type="email" placeholder="E-pasts" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <button type="submit" disabled={loading}>Nosutit saiti</button>
-      </form>
-      {message && <p className="ok">{message}</p>}
-      {error && <p className="error">{error}</p>}
-    </section>
+    <div className="auth-screen">
+      <section className="panel auth-panel compact-auth-panel">
+        <header className="auth-head">
+          <p className="tag">Security</p>
+          <h2>Paroles atjaunosana</h2>
+          <p className="muted">Ievadi e-pastu, un mes nosutisim paroles atjaunosanas saiti.</p>
+        </header>
+        <form className="form-grid auth-form-grid single-column" onSubmit={submit}>
+          <input type="email" placeholder="E-pasts" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <button type="submit" disabled={loading}>Nosutit saiti</button>
+        </form>
+        {message && <p className="ok auth-message">{message}</p>}
+        {error && <p className="error auth-message">{error}</p>}
+      </section>
+    </div>
   );
 }

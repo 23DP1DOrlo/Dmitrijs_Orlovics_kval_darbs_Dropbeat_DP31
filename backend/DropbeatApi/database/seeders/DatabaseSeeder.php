@@ -60,10 +60,29 @@ class DatabaseSeeder extends Seeder
 
         $genres = collect([
             'Hip-Hop',
-            'Electronic',
-            'Lo-Fi',
             'Trap',
-        ])->mapWithKeys(fn ($name) => [$name => Genre::create(['name' => $name])]);
+            'Rap',
+            'Drill',
+            'Boom Bap',
+            'R&B',
+            'Soul',
+            'Pop',
+            'Rock',
+            'Indie',
+            'Alternative',
+            'Electronic',
+            'House',
+            'Techno',
+            'EDM',
+            'Lo-Fi',
+            'Jazz',
+            'Funk',
+            'Reggaeton',
+            'Dancehall',
+            'Ambient',
+            'Phonk',
+            'Other',
+        ])->mapWithKeys(fn ($name) => [$name => Genre::firstOrCreate(['name' => $name])]);
 
         $releases = [
             ['title' => 'Midnight Flow', 'type' => 'single', 'genre' => 'Hip-Hop', 'date' => '2026-02-12', 'cover' => 'https://images.unsplash.com/photo-1511379938547-c1f69419868d'],

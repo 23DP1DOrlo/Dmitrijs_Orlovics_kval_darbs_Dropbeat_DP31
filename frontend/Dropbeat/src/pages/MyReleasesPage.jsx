@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { CoverImage } from "../components/CoverImage";
 
 export function MyReleasesPage({ user }) {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [error, setError] = useState("");
 
@@ -27,12 +29,11 @@ export function MyReleasesPage({ user }) {
       {error && <p className="error">{error}</p>}
       <div className="release-grid">
         {rows.map((item) => (
-          <article className="card" key={item.id}>
-            {item.cover_url && <img className="cover-image" src={item.cover_url} alt={item.title} />}
+          <article className="card clickable-card" key={item.id} onClick={() => navigate(`/releases/${item.id}`)}>
+            {item.cover_url && <CoverImage className="cover-image" src={item.cover_url} alt={item.title} />}
             <h3>{item.title}</h3>
             <p>{item.genre?.name}</p>
             <small>{item.release_date} | {item.type.toUpperCase()}</small>
-            <p><Link to={`/releases/${item.id}`}>Atvert relizi</Link></p>
           </article>
         ))}
       </div>

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { CoverImage } from "../components/CoverImage";
 
 export function LiveFeedPage() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
@@ -17,13 +19,12 @@ export function LiveFeedPage() {
       <p className="muted">Jaunakas aktivitates platforma.</p>
       <div className="timeline">
         {rows.slice(0, 12).map((item) => (
-          <article className="card" key={item.id}>
-            {item.cover_url && <img className="cover-image" src={item.cover_url} alt={item.title} />}
+          <article className="card clickable-card" key={item.id} onClick={() => navigate(`/releases/${item.id}`)}>
+            {item.cover_url && <CoverImage className="cover-image" src={item.cover_url} alt={item.title} />}
             <p className="tag">{item.type}</p>
             <h3>{item.title}</h3>
             <p>{item.artist?.stage_name}</p>
             <small>Publicets: {item.created_at?.slice(0, 10) ?? "n/a"}</small>
-            <p><Link to={`/releases/${item.id}`}>Atvert relizi</Link></p>
           </article>
         ))}
       </div>

@@ -18,8 +18,11 @@ class UserInsightController extends Controller
         $query = $validated['query'] ?? '';
 
         $users = User::query()
-            ->where('name', 'like', "%{$query}%")
-            ->orWhere('email', 'like', "%{$query}%")
+            ->where(function ($inner) use ($query) {
+                $inner
+                    ->where('name', 'like', "%{$query}%")
+                    ->orWhere('email', 'like', "%{$query}%");
+            })
             ->with('artist:id,user_id,stage_name')
             ->withCount('releaseComments')
             ->withCount('releaseRatings')
@@ -34,13 +37,13 @@ class UserInsightController extends Controller
     {
         $comments = ReleaseComment::query()
             ->where('user_id', $user->id)
-            ->with(['release:id,title,cover_url', 'release.artist:id,stage_name'])
+            ->with(['release:id,title,cover_url,artist_id', 'release.artist:id,stage_name'])
             ->latest()
             ->get();
 
         $ratings = ReleaseRating::query()
             ->where('user_id', $user->id)
-            ->with(['release:id,title,cover_url', 'release.artist:id,stage_name'])
+            ->with(['release:id,title,cover_url,artist_id', 'release.artist:id,stage_name'])
             ->latest()
             ->get();
 

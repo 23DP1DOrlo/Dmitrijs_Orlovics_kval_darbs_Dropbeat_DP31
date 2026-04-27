@@ -31,6 +31,12 @@ export function AuthPage({ onAuth }) {
       localStorage.setItem("dropbeat_token", data.token);
       localStorage.setItem("dropbeat_user", JSON.stringify(data.user));
       onAuth(data.user);
+      window.dispatchEvent(new CustomEvent("dropbeat:toast", {
+        detail: {
+          type: "success",
+          message: mode === "login" ? "Veiksmiga pieslegsanas kontam" : "Konts veiksmigi izveidots",
+        },
+      }));
     } catch (requestError) {
       const validationErrors = requestError?.response?.data?.errors;
       if (validationErrors) {
@@ -47,8 +53,13 @@ export function AuthPage({ onAuth }) {
   return (
     <div className="auth-screen">
       <section className="panel auth-panel">
-        <h2>{mode === "login" ? "Pieslegsanas" : "Registracija"}</h2>
-        <form className="form-grid" onSubmit={submit}>
+        <header className="auth-head">
+          <p className="tag">DropBeat Access</p>
+          <h2>{mode === "login" ? "Pieslegsanas" : "Registracija"}</h2>
+          <p className="muted">{mode === "login" ? "Ienac sava konta un turpini darbu ar relizem." : "Izveido jaunu kontu un izvelies savu lomu platforma."}</p>
+        </header>
+
+        <form className="form-grid auth-form-grid" onSubmit={submit}>
           {mode === "register" && (
             <>
               <input placeholder="Vards" value={form.name} onChange={(e) => update("name", e.target.value)} />
@@ -61,7 +72,7 @@ export function AuthPage({ onAuth }) {
                 <option value="artist">Makslinieks</option>
                 <option value="listener">Klausitajs</option>
               </select>
-              <p className="small-text">Izvelies lomu: artist vai listener.</p>
+              <p className="small-text auth-form-note">Izvelies lomu: artist vai listener.</p>
             </>
           )}
           <input type="email" placeholder="E-pasts" value={form.email} onChange={(e) => update("email", e.target.value)} />
@@ -76,11 +87,13 @@ export function AuthPage({ onAuth }) {
           )}
           <button type="submit" disabled={loading}>{mode === "login" ? "Ienakt" : "Izveidot kontu"}</button>
         </form>
-        {error && <p className="error">{error}</p>}
-        {mode === "login" && <Link to="/forgot-password">Aizmirsu paroli</Link>}
-        <button className="link-btn" onClick={() => setMode((prev) => (prev === "login" ? "register" : "login"))}>
-          {mode === "login" ? "Nav konta? Registreties" : "Jau ir konts? Pieslegties"}
-        </button>
+        {error && <p className="error auth-message">{error}</p>}
+        <div className="auth-actions-row">
+          {mode === "login" && <Link to="/forgot-password">Aizmirsu paroli</Link>}
+          <button className="link-btn" onClick={() => setMode((prev) => (prev === "login" ? "register" : "login"))}>
+            {mode === "login" ? "Nav konta? Registreties" : "Jau ir konts? Pieslegties"}
+          </button>
+        </div>
       </section>
     </div>
   );

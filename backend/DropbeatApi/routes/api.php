@@ -17,6 +17,7 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/releases', [ReleaseController::class, 'index']);
 Route::get('/releases/{release}', [ReleaseController::class, 'show']);
 Route::get('/stats/genres', [ReleaseController::class, 'statsSummary']);
+Route::get('/stats/overview', [ReleaseController::class, 'statsOverview']);
 Route::get('/genres', [GenreController::class, 'index']);
 Route::get('/users/search-comments', [UserInsightController::class, 'searchComments']);
 Route::get('/users/{user}/comments', [UserInsightController::class, 'commentsByUser']);
@@ -37,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('releases', ReleaseController::class)->except(['index', 'show', 'create', 'edit']);
     Route::post('/releases/upload-cover', [ReleaseController::class, 'uploadCover']);
     Route::post('/releases/{release}/stats', [ReleaseController::class, 'storeStats']);
+    Route::post('/releases/{release}/feedback', [ReleaseController::class, 'submitFeedback']);
     Route::post('/releases/{release}/rate', [ReleaseController::class, 'rate']);
     Route::post('/releases/{release}/comments', [ReleaseController::class, 'comment']);
     Route::get('/me/artist-profile', [ArtistController::class, 'myProfile']);

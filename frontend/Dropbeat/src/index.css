@@ -15,11 +15,11 @@
 }
 
 :root[data-theme="light"] {
-  --text: #262838;
-  --text-h: #0f1120;
-  --bg: #f4f6ff;
-  --border: #ccd3ea;
-  --shadow: rgba(13, 20, 42, 0.15) 0 10px 25px -12px;
+  --text: #2b3245;
+  --text-h: #151b2d;
+  --bg: #f6f8fc;
+  --border: #d8deee;
+  --shadow: rgba(24, 42, 84, 0.14) 0 16px 30px -18px;
 }
 
 body {

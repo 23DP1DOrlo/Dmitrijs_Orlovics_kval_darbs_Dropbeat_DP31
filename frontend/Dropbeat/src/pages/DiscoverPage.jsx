@@ -4,6 +4,15 @@ import { Link } from "react-router-dom";
 
 export function DiscoverPage() {
   const [rows, setRows] = useState([]);
+  const formatDuration = (durationSeconds) => {
+    const total = Number(durationSeconds ?? 0);
+    if (!total) return "n/a";
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    if (hours > 0) return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     api.get("/releases", { params: { sort_by: "release_date", sort_dir: "desc" } }).then(({ data }) => {
@@ -23,7 +32,7 @@ export function DiscoverPage() {
             <h3>{item.title}</h3>
             <Link to={`/releases/${item.id}`}>Skatit detalas</Link>
             <p>{item.artist?.stage_name}</p>
-            <small>{item.genre?.name} | {item.release_date}</small>
+            <small>{item.genre?.name} | {item.release_date} | {formatDuration(item.duration_seconds)}</small>
           </article>
         ))}
       </div>
