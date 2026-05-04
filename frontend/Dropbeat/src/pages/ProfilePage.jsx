@@ -18,7 +18,9 @@ export function ProfilePage({ user }) {
     bio: "",
     instagram_url: "",
     youtube_url: "",
+    avatar_url: "",
   });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     api.get("/me/profile").then(({ data }) => {
@@ -43,9 +45,23 @@ export function ProfilePage({ user }) {
         bio: data.profile?.bio ?? "",
         instagram_url: data.profile?.instagram_url ?? "",
         youtube_url: data.profile?.youtube_url ?? "",
+        avatar_url: data.profile?.avatar_url ?? "",
       });
     });
   }, [user]);
+
+  const normalizeImageUrl = (value) => {
+    if (!value) return "";
+    const apiOrigin = (api.defaults.baseURL ?? "").replace("/api", "");
+    if (value.startsWith("/storage/")) return `${apiOrigin}${value}`;
+    if (/^https?:\/\/localhost(?::\d+)?\/storage\//.test(value)) {
+      return value.replace(/^https?:\/\/localhost(?::\d+)?\/storage\//, `${apiOrigin}/storage/`);
+    }
+    if (/^https?:\/\/127\.0\.0\.1(?::\d+)?\/storage\//.test(value)) {
+      return value.replace(/^https?:\/\/127\.0\.0\.1(?::\d+)?\/storage\//, `${apiOrigin}/storage/`);
+    }
+    return value;
+  };
 
   const submitBase = async (event) => {
     event.preventDefault();
@@ -74,6 +90,27 @@ export function ProfilePage({ user }) {
     }
   };
 
+  const uploadAvatar = async (file) => {
+    if (!file) return;
+    setError("");
+    setMessage("");
+    setUploadingAvatar(true);
+    try {
+      const payload = new FormData();
+      payload.append("avatar", file);
+      const { data } = await api.post("/me/artist-profile/upload-avatar", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setForm((prev) => ({ ...prev, avatar_url: data.avatar_url }));
+      setProfile((prev) => (prev ? { ...prev, profile: { ...(prev.profile ?? {}), avatar_url: data.avatar_url } } : prev));
+      setMessage("Ava saglabata. Neaizmirsti atjaunot profilu.");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? "Neizdevas augshupieladet avataru.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   return (
     <section className="panel">
       <h2>Profils</h2>
@@ -96,7 +133,11 @@ export function ProfilePage({ user }) {
         <>
           <h3>Makslinieka profils</h3>
           <div className="profile-head">
-            <div className="avatar">{(form.stage_name || "A").slice(0, 1).toUpperCase()}</div>
+            {form.avatar_url ? (
+              <img className="avatar avatar-image" src={normalizeImageUrl(form.avatar_url)} alt="Artist avatar" />
+            ) : (
+              <div className="avatar">{(form.stage_name || "A").slice(0, 1).toUpperCase()}</div>
+            )}
             <div>
               <h3>{form.stage_name || "Makslinieks"}</h3>
               <p className="muted">Konts: {profile?.user?.email ?? user.email}</p>
@@ -110,6 +151,9 @@ export function ProfilePage({ user }) {
             <textarea value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} placeholder="Bio" rows={4} />
             <input value={form.instagram_url} onChange={(e) => setForm((p) => ({ ...p, instagram_url: e.target.value }))} placeholder="Instagram URL" />
             <input value={form.youtube_url} onChange={(e) => setForm((p) => ({ ...p, youtube_url: e.target.value }))} placeholder="YouTube URL" />
+            <input value={form.avatar_url} onChange={(e) => setForm((p) => ({ ...p, avatar_url: e.target.value }))} placeholder="Avatar URL" />
+            <input type="file" accept="image/*" onChange={(e) => uploadAvatar(e.target.files?.[0])} />
+            {uploadingAvatar && <p className="small-text">Augshupieladeju avataru...</p>}
             <button type="submit">Atjaunot makslinieka profilu</button>
           </form>
         </>

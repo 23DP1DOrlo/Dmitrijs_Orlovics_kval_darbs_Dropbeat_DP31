@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -27,6 +28,18 @@ class Release extends Model
         return [
             'is_published' => 'boolean',
         ];
+    }
+
+    /**
+     * PostgreSQL: boolean columns must not be compared to integer 1/0 (Laravel default binding).
+     */
+    public function scopeWhereIsPublished(Builder $query, bool $value = true): Builder
+    {
+        $column = $query->getModel()->qualifyColumn('is_published');
+
+        return $value
+            ? $query->whereRaw("{$column} = true")
+            : $query->whereRaw("{$column} = false");
     }
 
     public function artist(): BelongsTo

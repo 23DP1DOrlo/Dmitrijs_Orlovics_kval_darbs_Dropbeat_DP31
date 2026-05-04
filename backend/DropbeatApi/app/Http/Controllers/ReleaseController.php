@@ -63,7 +63,7 @@ class ReleaseController extends Controller
                     ->orWhereHas('artists', fn ($q) => $q->where('artists.id', $validated['artist_id']));
             }))
             ->when(isset($validated['type']), fn ($q) => $q->where('type', $validated['type']))
-            ->when(isset($validated['published']), fn ($q) => $q->where('is_published', $validated['published']))
+            ->when(array_key_exists('published', $validated), fn ($q) => $q->whereIsPublished((bool) $validated['published']))
             ->when(isset($validated['from_date']), fn ($q) => $q->whereDate('release_date', '>=', $validated['from_date']))
             ->when(isset($validated['to_date']), fn ($q) => $q->whereDate('release_date', '<=', $validated['to_date']));
 

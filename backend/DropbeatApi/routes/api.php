@@ -16,6 +16,7 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 Route::get('/releases', [ReleaseController::class, 'index']);
 Route::get('/releases/{release}', [ReleaseController::class, 'show']);
+Route::get('/artists/{artist}', [ArtistController::class, 'publicProfile']);
 Route::get('/stats/genres', [ReleaseController::class, 'statsSummary']);
 Route::get('/stats/overview', [ReleaseController::class, 'statsOverview']);
 Route::get('/genres', [GenreController::class, 'index']);
@@ -34,7 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/users/{user}', [AdminUserController::class, 'show']);
     Route::put('/admin/users/{user}', [AdminUserController::class, 'update']);
     Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy']);
-    Route::apiResource('artists', ArtistController::class)->except(['create', 'edit']);
+    Route::apiResource('artists', ArtistController::class)->except(['create', 'edit', 'show']);
     Route::apiResource('releases', ReleaseController::class)->except(['index', 'show', 'create', 'edit']);
     Route::post('/releases/upload-cover', [ReleaseController::class, 'uploadCover']);
     Route::post('/releases/{release}/stats', [ReleaseController::class, 'storeStats']);
@@ -43,4 +44,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/releases/{release}/comments', [ReleaseController::class, 'comment']);
     Route::get('/me/artist-profile', [ArtistController::class, 'myProfile']);
     Route::put('/me/artist-profile', [ArtistController::class, 'updateMyProfile']);
+    Route::post('/me/artist-profile/upload-avatar', [ArtistController::class, 'uploadMyAvatar']);
 });

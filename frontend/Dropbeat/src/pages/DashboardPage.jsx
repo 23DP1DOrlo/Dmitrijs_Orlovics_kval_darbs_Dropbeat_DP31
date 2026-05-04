@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CoverImage } from "../components/CoverImage";
 
 export function DashboardPage({ user, t = (key, fallback) => fallback }) {
@@ -72,7 +72,17 @@ export function DashboardPage({ user, t = (key, fallback) => fallback }) {
               {item.cover_url && <CoverImage className="upcoming-cover" src={item.cover_url} alt={item.title} />}
               <div className="upcoming-meta">
                 <strong>{item.title}</strong>
-                <p>{item.artist?.stage_name} - {item.release_date}</p>
+                <p>
+                  {item.artist?.id ? (
+                    <Link to={`/artists/${item.artist.id}`} className="dashboard-artist-link" onClick={(e) => e.stopPropagation()}>
+                      {item.artist?.stage_name}
+                    </Link>
+                  ) : (
+                    item.artist?.stage_name
+                  )}
+                  {" — "}
+                  {item.release_date}
+                </p>
                 <div className="release-countdown">
                   <span>{String(item.countdown.days).padStart(2, "0")}d</span>
                   <span>{String(item.countdown.hours).padStart(2, "0")}h</span>
@@ -92,7 +102,17 @@ export function DashboardPage({ user, t = (key, fallback) => fallback }) {
           <article key={item.id} className="card clickable-card" onClick={() => navigate(`/releases/${item.id}`)}>
             {item.cover_url && <CoverImage className="cover-image" src={item.cover_url} alt={item.title} />}
             <h3>{item.title}</h3>
-            <p>{item.artist?.stage_name} - {item.genre?.name}</p>
+            <p>
+              {item.artist?.id ? (
+                <Link to={`/artists/${item.artist.id}`} className="dashboard-artist-link" onClick={(e) => e.stopPropagation()}>
+                  {item.artist?.stage_name}
+                </Link>
+              ) : (
+                item.artist?.stage_name
+              )}
+              {" — "}
+              {item.genre?.name}
+            </p>
             <small>{item.release_date}</small>
           </article>
         ))}

@@ -3,7 +3,27 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { CoverImage } from "../components/CoverImage";
 
-export function ReleaseDetailsPage({ user }) {
+function ArtistLine({ artists, primary, t }) {
+  const list = (artists?.length ? artists : [primary]).filter(Boolean);
+  return (
+    <p className="release-artist-line">
+      {list.map((a, i) => (
+        <span key={a.id ?? i}>
+          {i > 0 ? ", " : ""}
+          {a.id ? (
+            <Link to={`/artists/${a.id}`} className="release-artist-link">
+              {a.stage_name ?? t?.("common.unknownArtist", "Unknown artist")}
+            </Link>
+          ) : (
+            a.stage_name
+          )}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+export function ReleaseDetailsPage({ user, t = (key, fallback) => fallback }) {
   const { releaseId } = useParams();
   const navigate = useNavigate();
   const [release, setRelease] = useState(null);
@@ -100,7 +120,8 @@ export function ReleaseDetailsPage({ user }) {
         <div>
           <p className="tag">{release.type}</p>
           <h2>{release.title}</h2>
-          <p>{release.artist?.stage_name} - {release.custom_genre_name || release.genre?.name}</p>
+          <ArtistLine artists={release.artists} primary={release.artist} t={t} />
+          <p className="release-genre-line">{release.custom_genre_name || release.genre?.name}</p>
           <p className="small-text">Ilgums: {formatDuration(release.duration_seconds)}</p>
           <p className="small-text">
             Videjais: Teksts {Number(release.avg_rhymes_images ?? 0).toFixed(1)} | Ritmika {Number(release.avg_structure_rhythm ?? 0).toFixed(1)} | Stils {Number(release.avg_style_execution ?? 0).toFixed(1)} | Individualitate {Number(release.avg_individuality_charisma ?? 0).toFixed(1)}

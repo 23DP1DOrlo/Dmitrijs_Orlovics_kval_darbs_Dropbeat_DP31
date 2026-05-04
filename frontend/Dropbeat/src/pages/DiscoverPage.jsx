@@ -31,7 +31,15 @@ export function DiscoverPage({ t = (key, fallback) => fallback }) {
             <p className="tag">{item.type}</p>
             <h3>{item.title}</h3>
             <Link to={`/releases/${item.id}`}>{t("pages.discover.details", "Skatit detalas")}</Link>
-            <p>{item.artist?.stage_name}</p>
+            <p>
+              {item.artist?.id ? (
+                <Link to={`/artists/${item.artist.id}`} className="discover-artist-link">
+                  {item.artist?.stage_name}
+                </Link>
+              ) : (
+                item.artist?.stage_name
+              )}
+            </p>
             <small>{item.genre?.name} | {item.release_date} | {formatDuration(item.duration_seconds)}</small>
           </article>
         ))}

@@ -1,6 +1,6 @@
 import './App.css'
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { CoverImage } from "./components/CoverImage";
 import { AuthPage } from "./pages/AuthPage";
@@ -14,6 +14,7 @@ import { LiveFeedPage } from "./pages/LiveFeedPage";
 import { MyReleasesPage } from "./pages/MyReleasesPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { AboutPage } from "./pages/AboutPage";
+import { ArtistProfilePage } from "./pages/ArtistProfilePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ReleaseRadarPage } from "./pages/ReleaseRadarPage";
 import { ReleaseDetailsPage } from "./pages/ReleaseDetailsPage";
@@ -41,6 +42,25 @@ function NavIcon({ type }) {
   return (
     <svg {...common} aria-hidden="true">
       {icons[type] ?? icons.dashboard}
+    </svg>
+  );
+}
+
+function HeaderActionIcon({ type }) {
+  const common = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" };
+  const icons = {
+    login: <><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /></>,
+    register: <><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="3" /><path d="M20 8v6" /><path d="M17 11h6" /></>,
+    themeDark: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />,
+    themeLight: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></>,
+    profile: <><circle cx="12" cy="8" r="4" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
+    create: <><path d="M12 5v14" /><path d="M5 12h14" /></>,
+    logout: <><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>,
+  };
+
+  return (
+    <svg {...common} aria-hidden="true">
+      {icons[type] ?? icons.login}
     </svg>
   );
 }
@@ -131,6 +151,22 @@ const translations = {
         distribution: "Distribution",
         distributionText: "Eksports uz Spotify/Apple Music metadatu schema.",
       },
+      artist: {
+        loading: "Ielade...",
+        loadError: "Neizdevas ieladet artista profilu.",
+        invalidId: "Nederigs artista ID.",
+        back: "Atpakal",
+        badge: "Makslinieks",
+        verified: "Verificets",
+        statsAria: "Statistika",
+        releasesCount: "Publiskas relizes",
+        avgScore: "Videja novertejuma videja",
+        avgHint: "No relizem ar novertejumiem: {n}",
+        noRatingsYet: "Vel nav apkopojamu novertejumu",
+        discography: "Diskografija",
+        noReleases: "Sis makslinieks vel nav publicojis relizu.",
+        noVotes: "Nav balsu",
+      },
     },
     header: {
       title: "Muzikas relizu platforma",
@@ -143,6 +179,11 @@ const translations = {
       logout: "Iziet",
       light: "Light",
       dark: "Dark",
+      searchPlaceholder: "Meklet artistu vai relizi...",
+      searchLoading: "Mekleju...",
+      searchEmpty: "Nekas nav atrasts",
+      searchArtists: "Artists",
+      searchTracks: "Tracks",
     },
     auth: {
       accessTag: "DropBeat Access",
@@ -270,6 +311,22 @@ const translations = {
         distribution: "Дистрибуция",
         distributionText: "Экспорт метаданных для Spotify/Apple Music.",
       },
+      artist: {
+        loading: "Загрузка...",
+        loadError: "Не удалось загрузить профиль артиста.",
+        invalidId: "Некорректный ID артиста.",
+        back: "Назад",
+        badge: "Артист",
+        verified: "Верифицирован",
+        statsAria: "Статистика",
+        releasesCount: "Опубликованные релизы",
+        avgScore: "Средняя оценка по релизам",
+        avgHint: "По релизам с оценками: {n}",
+        noRatingsYet: "Пока нет оценок для расчёта",
+        discography: "Дискография",
+        noReleases: "У этого артиста пока нет опубликованных релизов.",
+        noVotes: "Нет голосов",
+      },
     },
     header: {
       title: "Платформа музыкальных релизов",
@@ -282,6 +339,11 @@ const translations = {
       logout: "Выйти",
       light: "Светлая",
       dark: "Темная",
+      searchPlaceholder: "Найти артиста или трек...",
+      searchLoading: "Ищу...",
+      searchEmpty: "Ничего не найдено",
+      searchArtists: "Артисты",
+      searchTracks: "Треки",
     },
     auth: {
       accessTag: "Доступ DropBeat",
@@ -409,6 +471,22 @@ const translations = {
         distribution: "Distribution",
         distributionText: "Metadata export for Spotify/Apple Music.",
       },
+      artist: {
+        loading: "Loading...",
+        loadError: "Could not load artist profile.",
+        invalidId: "Invalid artist ID.",
+        back: "Back",
+        badge: "Artist",
+        verified: "Verified",
+        statsAria: "Stats",
+        releasesCount: "Published releases",
+        avgScore: "Average score across releases",
+        avgHint: "Based on releases with ratings: {n}",
+        noRatingsYet: "No ratings to aggregate yet",
+        discography: "Discography",
+        noReleases: "This artist has not published any releases yet.",
+        noVotes: "No votes yet",
+      },
     },
     header: {
       title: "Music Release Platform",
@@ -421,6 +499,11 @@ const translations = {
       logout: "Logout",
       light: "Light",
       dark: "Dark",
+      searchPlaceholder: "Search artist or track...",
+      searchLoading: "Searching...",
+      searchEmpty: "Nothing found",
+      searchArtists: "Artists",
+      searchTracks: "Tracks",
     },
     auth: {
       accessTag: "DropBeat Access",
@@ -467,6 +550,7 @@ const translations = {
 
 function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isAuthLayout = ["/auth", "/forgot-password", "/reset-password"].includes(location.pathname);
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem("dropbeat_token");
@@ -482,7 +566,15 @@ function App() {
   const [lang, setLang] = useState(() => localStorage.getItem("dropbeat_lang") ?? "lv");
   const [releaseFeed, setReleaseFeed] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [lightLogoMissing, setLightLogoMissing] = useState(false);
+  const [feedReleaseModal, setFeedReleaseModal] = useState(null);
+  const [headerSearch, setHeaderSearch] = useState("");
+  const [searchingHeader, setSearchingHeader] = useState(false);
+  const [headerSearchOpen, setHeaderSearchOpen] = useState(false);
+  const [headerSearchResults, setHeaderSearchResults] = useState({ releases: [], artists: [] });
+  const headerSearchRef = useRef(null);
   const t = translations[lang] ?? translations.lv;
+  const headerLogo = theme === "light" && !lightLogoMissing ? "/dropbeatlogo_light.png" : "/dropbeatlogo.png";
   const langIndex = { ru: 0, en: 1, lv: 2 }[lang] ?? 2;
   const tr = (key, fallback = "") => {
     const value = key.split(".").reduce((acc, part) => (acc && typeof acc === "object" ? acc[part] : undefined), t);
@@ -512,6 +604,12 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (theme === "light") {
+      setLightLogoMissing(false);
+    }
+  }, [theme]);
+
+  useEffect(() => {
     localStorage.setItem("dropbeat_lang", lang);
   }, [lang]);
 
@@ -533,6 +631,117 @@ function App() {
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setHeaderSearchOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const term = headerSearch.trim();
+    if (term.length < 2) {
+      setHeaderSearchResults({ releases: [], artists: [] });
+      setSearchingHeader(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchingHeader(true);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data } = await api.get("/releases", {
+          params: { q: term, sort_by: "release_date", sort_dir: "desc" },
+        });
+
+        if (cancelled) return;
+        const rows = data?.data ?? [];
+        const artistsMap = new Map();
+        rows.forEach((item) => {
+          const list = [item.artist, ...(item.artists ?? [])].filter(Boolean);
+          list.forEach((artist) => {
+            if (artist?.id && artist?.stage_name && !artistsMap.has(artist.id)) {
+              artistsMap.set(artist.id, artist);
+            }
+          });
+        });
+
+        setHeaderSearchResults({
+          releases: rows.slice(0, 6),
+          artists: Array.from(artistsMap.values()).slice(0, 6),
+        });
+      } catch {
+        if (!cancelled) {
+          setHeaderSearchResults({ releases: [], artists: [] });
+        }
+      } finally {
+        if (!cancelled) {
+          setSearchingHeader(false);
+        }
+      }
+    }, 260);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [headerSearch]);
+
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      if (!headerSearchRef.current?.contains(event.target)) {
+        setHeaderSearchOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", onPointerDown);
+    return () => window.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!feedReleaseModal) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setFeedReleaseModal(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [feedReleaseModal]);
+
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll("[data-reveal]"));
+    if (nodes.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -6% 0px" }
+    );
+
+    nodes.forEach((node, index) => {
+      node.style.setProperty("--reveal-delay", `${Math.min(index * 60, 320)}ms`);
+      node.classList.add("reveal-on-scroll");
+      observer.observe(node);
+    });
+
+    return () => observer.disconnect();
   }, [location.pathname]);
 
   const averageScore = (item) => {
@@ -543,6 +752,33 @@ function App() {
       Number(item.avg_individuality_charisma ?? 0),
     ];
     return values.reduce((sum, value) => sum + value, 0) / values.length;
+  };
+
+  const metricScore = (value) => Number(value ?? 0).toFixed(1);
+
+  const openReleaseFromSearch = (releaseId) => {
+    setHeaderSearchOpen(false);
+    setHeaderSearch("");
+    navigate(`/releases/${releaseId}`);
+  };
+
+  const openArtistFromSearch = (artistId) => {
+    setHeaderSearchOpen(false);
+    setHeaderSearch("");
+    navigate(`/artists/${artistId}`);
+  };
+
+  const submitHeaderSearch = (event) => {
+    event.preventDefault();
+    const firstRelease = headerSearchResults.releases[0];
+    const firstArtist = headerSearchResults.artists[0];
+    if (firstRelease?.id) {
+      openReleaseFromSearch(firstRelease.id);
+      return;
+    }
+    if (firstArtist?.id) {
+      openArtistFromSearch(firstArtist.id);
+    }
   };
 
   if (isAuthLayout) {
@@ -560,7 +796,7 @@ function App() {
 
   return (
     <div className={`app-shell ${mobileMenuOpen ? "mobile-nav-open" : ""}`}>
-      <aside className={`sidebar ${mobileMenuOpen ? "open" : ""}`}>
+      <aside id="mobile-sidebar" className={`sidebar ${mobileMenuOpen ? "open" : ""}`}>
         <div className="logo-badge">
           <span className="sidebar-dot" aria-hidden="true" />
         </div>
@@ -580,111 +816,281 @@ function App() {
       {mobileMenuOpen && <button className="sidebar-backdrop" type="button" aria-label={t.misc.closeMenu} onClick={() => setMobileMenuOpen(false)} />}
 
       <main className="page">
-        <header className="hero">
-          <div>
-            <div className="hero-brand">
-              <img src="/dropbeatlogo.png" alt="DropBeat" className="hero-logo" />
-              <div className="hero-brand-copy">
-                <h1>{tr("header.title", "Muzikas relizu platforma")}</h1>
-                <p className="subtitle">{tr("header.subtitle", "Publice, parvaldi un analize relizes vienota profesionala paneli.")}</p>
+        <div className="page-inner">
+          <header className="liquid-header" data-reveal>
+            <span className="liquid-header-glow" aria-hidden="true" />
+            <NavLink to="/dashboard" className="liquid-brand">
+              <img
+                src={headerLogo}
+                alt="DropBeat"
+                className="liquid-logo"
+                onError={() => setLightLogoMissing(true)}
+              />
+              <div className="liquid-brand-copy">
+                <strong>DropBeat</strong>
+                <small>{tr("header.title", "Music Release Platform")}</small>
               </div>
-            </div>
-          </div>
-          <div className="top-actions">
-            <button
-              className="mobile-menu-btn"
-              type="button"
-              aria-label={mobileMenuOpen ? t.misc.closeMenu : t.misc.openMenu}
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-            >
-              {t.header.menu}
-            </button>
-            <div className="lang-switch" role="group" aria-label="Language" style={{ "--lang-index": langIndex }}>
-              <span className="lang-switch-indicator" aria-hidden="true" />
-              {["ru", "en", "lv"].map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  className={`lang-switch-btn ${lang === code ? "active" : ""}`}
-                  onClick={() => setLang(code)}
-                >
-                  {code.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <button
-              className="theme-toggle header-btn"
-              type="button"
-              onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-            >
-              {theme === "dark" ? t.header.light : t.header.dark}
-            </button>
-            {user && <NavLink className="ghost-btn profile-header-btn header-btn" to="/profile">{t.header.profile}</NavLink>}
-            {user?.role === "artist" && <NavLink className="create-release-btn header-btn" to="/artist/drop">{t.header.dropRelease}</NavLink>}
-            {user ? (
-              <div className="user-block">
-                <span className="muted">{user.name} ({user.role})</span>
-                <button onClick={logout}>{t.header.logout}</button>
-              </div>
-            ) : (
-              <div className="auth-actions">
-                <NavLink className="ghost-btn header-btn" to="/auth">{t.header.login}</NavLink>
-                <NavLink className="primary-btn header-btn" to="/auth">{t.header.register}</NavLink>
-              </div>
-            )}
-          </div>
-        </header>
+            </NavLink>
 
-        {releaseFeed.length > 0 && (
-          <section className="release-feed-strip">
-            <div className="feed-strip-head">
-              <p className="feed-title">{t.misc.latestDrops}</p>
-              <span className="feed-head-pill">{t.misc.liveWave} • {releaseFeed.length}</span>
+            <div className="liquid-search" ref={headerSearchRef}>
+              <form className="liquid-search-form" onSubmit={submitHeaderSearch}>
+                <span className="liquid-search-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                </span>
+                <input
+                  value={headerSearch}
+                  onChange={(e) => setHeaderSearch(e.target.value)}
+                  onFocus={() => setHeaderSearchOpen(true)}
+                  className="liquid-search-input"
+                  placeholder={tr("header.searchPlaceholder", "Search artist or track")}
+                />
+              </form>
+              {headerSearchOpen && headerSearch.trim().length >= 2 && (
+                <div className="liquid-search-popover">
+                  {searchingHeader && <p className="liquid-search-state">{tr("header.searchLoading", "Searching...")}</p>}
+                  {!searchingHeader && headerSearchResults.releases.length === 0 && headerSearchResults.artists.length === 0 && (
+                    <p className="liquid-search-state">{tr("header.searchEmpty", "Nothing found")}</p>
+                  )}
+                  {headerSearchResults.artists.length > 0 && (
+                    <div className="liquid-search-group">
+                      <small>{tr("header.searchArtists", "Artists")}</small>
+                      {headerSearchResults.artists.map((artist) => (
+                        <button
+                          key={`artist-${artist.id}`}
+                          type="button"
+                          className="liquid-search-item"
+                          onClick={() => openArtistFromSearch(artist.id)}
+                        >
+                          @{artist.stage_name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {headerSearchResults.releases.length > 0 && (
+                    <div className="liquid-search-group">
+                      <small>{tr("header.searchTracks", "Tracks")}</small>
+                      {headerSearchResults.releases.map((item) => (
+                        <button
+                          key={`release-${item.id}`}
+                          type="button"
+                          className="liquid-search-item"
+                          onClick={() => openReleaseFromSearch(item.id)}
+                        >
+                          <span>{item.title}</span>
+                          <em>{item.artist?.stage_name ?? tr("common.unknownArtist", "Unknown artist")}</em>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="feed-row">
-              {releaseFeed.map((item) => (
-                <NavLink key={item.id} to={`/releases/${item.id}`} className="feed-cover-link">
-                  <CoverImage className="feed-cover" src={item.cover_url} alt={item.title} />
-                  <article className="feed-inline-meta">
-                    <h4>{item.title}</h4>
-                    <p>{item.artist?.stage_name ?? t.misc.unknownArtist}</p>
-                    <small>
-                      <span className="feed-type-pill">{String(item.type ?? "single").toUpperCase()}</span>
-                      <span className="feed-score-pill">★ {averageScore(item).toFixed(1)}</span>
-                    </small>
-                  </article>
+
+            <div className="liquid-actions">
+              <div className="lang-switch" role="group" aria-label="Language" style={{ "--lang-index": langIndex }}>
+                <span className="lang-switch-indicator" aria-hidden="true" />
+                {["ru", "en", "lv"].map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    className={`lang-switch-btn ${lang === code ? "active" : ""}`}
+                    onClick={() => setLang(code)}
+                  >
+                    {code === "en" ? "ENG" : code.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                className="liquid-icon-btn"
+                type="button"
+                aria-label={theme === "dark" ? t.header.light : t.header.dark}
+                onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+              >
+                <HeaderActionIcon type={theme === "dark" ? "themeLight" : "themeDark"} />
+              </button>
+
+              {user?.role === "artist" && (
+                <NavLink className="liquid-pill-btn liquid-accent-btn" to="/artist/drop">
+                  <span className="btn-icon" aria-hidden="true"><HeaderActionIcon type="create" /></span>
+                  <span>{t.header.dropRelease}</span>
                 </NavLink>
-              ))}
+              )}
+
+              {user && (
+                <NavLink className="liquid-pill-btn" to="/profile">
+                  <span className="btn-icon" aria-hidden="true"><HeaderActionIcon type="profile" /></span>
+                  <span>{t.header.profile}</span>
+                </NavLink>
+              )}
+
+              {!user && (
+                <div className="liquid-auth-actions">
+                  <NavLink className="liquid-pill-btn" to="/auth">
+                    <span className="btn-icon" aria-hidden="true"><HeaderActionIcon type="login" /></span>
+                    <span>{t.header.login}</span>
+                  </NavLink>
+                  <NavLink className="liquid-pill-btn liquid-accent-btn" to="/auth">
+                    <span className="btn-icon" aria-hidden="true"><HeaderActionIcon type="register" /></span>
+                    <span>{t.header.register}</span>
+                  </NavLink>
+                </div>
+              )}
+
+              {user && (
+                <button className="liquid-pill-btn" type="button" onClick={logout}>
+                  <span className="btn-icon" aria-hidden="true"><HeaderActionIcon type="logout" /></span>
+                  <span>{t.header.logout}</span>
+                </button>
+              )}
+
+              <button
+                className={`liquid-menu-btn ${mobileMenuOpen ? "open" : ""}`}
+                type="button"
+                aria-label={mobileMenuOpen ? t.misc.closeMenu : t.misc.openMenu}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-sidebar"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+              >
+                <span className="liquid-menu-icon" aria-hidden="true">
+                  <span className="liquid-menu-line top" />
+                  <span className="liquid-menu-line mid" />
+                  <span className="liquid-menu-line bot" />
+                </span>
+              </button>
+            </div>
+          </header>
+
+          {releaseFeed.length > 0 && (
+            <section className="release-feed-strip" data-reveal>
+              <div className="feed-strip-head">
+                <p className="feed-title">{t.misc.latestDrops}</p>
+                <span className="feed-head-pill">{t.misc.liveWave} • {releaseFeed.length}</span>
+              </div>
+            <div className="feed-row-scroll">
+              <div className="feed-row">
+                {releaseFeed.map((item) => (
+                  <div key={item.id} className="feed-item">
+                    <div
+                      className="feed-cover-link"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${item.title} — ${tr("pages.discover.details", "Skatit detalas")}`}
+                      onClick={() => setFeedReleaseModal(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setFeedReleaseModal(item);
+                        }
+                      }}
+                    >
+                      <CoverImage className="feed-cover" src={item.cover_url} alt={item.title} />
+                      <article className="feed-inline-meta">
+                        <h4>{item.title}</h4>
+                        <p>
+                          {item.artist?.id ? (
+                            <Link
+                              to={`/artists/${item.artist.id}`}
+                              className="feed-artist-link"
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                            >
+                              {item.artist?.stage_name ?? t.misc.unknownArtist}
+                            </Link>
+                          ) : (
+                            item.artist?.stage_name ?? t.misc.unknownArtist
+                          )}
+                        </p>
+                        <small>
+                          <span className="feed-type-pill">{String(item.type ?? "single").toUpperCase()}</span>
+                          <span className="feed-score-pill">★ {averageScore(item).toFixed(1)}</span>
+                        </small>
+                      </article>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </div>
+            </section>
+          )}
+
+          <section className="content-wrap" data-reveal>
+            {sessionError && <p className="error">{sessionError}</p>}
+            <Routes>
+              <Route path="/dashboard" element={<DashboardPage user={user} lang={lang} t={tr} />} />
+              <Route path="/about" element={<AboutPage lang={lang} t={tr} />} />
+              <Route path="/discover" element={<DiscoverPage lang={lang} t={tr} />} />
+              <Route path="/" element={<ReleasesPage user={user} lang={lang} t={tr} />} />
+              <Route path="/artist/drop" element={<ArtistDropPage user={user} lang={lang} t={tr} />} />
+              <Route path="/live-feed" element={<LiveFeedPage lang={lang} t={tr} />} />
+              <Route path="/leaderboard" element={<LeaderboardPage lang={lang} t={tr} />} />
+              <Route path="/radar" element={<ReleaseRadarPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/releases/:releaseId" element={<ReleaseDetailsPage user={user} lang={lang} t={tr} />} />
+              <Route path="/artists/:artistId" element={<ArtistProfilePage t={tr} />} />
+              <Route path="/my-releases" element={<MyReleasesPage user={user} lang={lang} t={tr} />} />
+              <Route path="/studio" element={<StudioPage user={user} lang={lang} t={tr} />} />
+              <Route path="/stats" element={<StatsPage lang={lang} t={tr} />} />
+              <Route path="/users" element={<UserCommentsPage lang={lang} t={tr} />} />
+              <Route path="/users/:userId" element={<UserProfileInsightsPage lang={lang} t={tr} />} />
+              <Route path="/admin/users" element={<AdminUsersPage user={user} lang={lang} t={tr} />} />
+              <Route path="/profile" element={<ProfilePage user={user} lang={lang} t={tr} />} />
+              <Route path="/auth" element={<AuthPage onAuth={setUser} lang={lang} t={tr} />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage lang={lang} t={tr} />} />
+              <Route path="/reset-password" element={<ResetPasswordPage lang={lang} t={tr} />} />
+            </Routes>
+          </section>
+        </div>
+      </main>
+      {feedReleaseModal && (
+        <>
+          <div
+            className="feed-modal-backdrop"
+            onClick={() => setFeedReleaseModal(null)}
+          />
+          <section className="feed-release-modal" role="dialog" aria-modal="true" aria-label={feedReleaseModal.title}>
+            <button type="button" className="feed-modal-close" onClick={() => setFeedReleaseModal(null)}>×</button>
+            <CoverImage className="feed-modal-cover" src={feedReleaseModal.cover_url} alt={feedReleaseModal.title} />
+            <div className="feed-modal-main">
+              <p className="tag">{String(feedReleaseModal.type ?? "single").toUpperCase()}</p>
+              <h3>{feedReleaseModal.title}</h3>
+              <p className="muted">
+                {feedReleaseModal.artist?.stage_name ?? t.misc.unknownArtist} • {feedReleaseModal.release_date}
+              </p>
+              <div className="feed-modal-kpi-row">
+                <span className="feed-modal-kpi">★ {averageScore(feedReleaseModal).toFixed(1)}</span>
+                <span className="feed-modal-kpi">{tr("pages.leaderboard.votes", "Votes")}: {Number(feedReleaseModal.ratings_count ?? 0)}</span>
+                <span className="feed-modal-kpi">{tr("pages.dashboard.kpiComments", "Komentari")}: {Number(feedReleaseModal.comments_count ?? 0)}</span>
+              </div>
+            </div>
+            <div className="feed-modal-metrics">
+              <article><strong>{tr("common.textMetric", "Teksts")}</strong><span>{metricScore(feedReleaseModal.avg_rhymes_images)}</span></article>
+              <article><strong>{tr("common.rhythmMetric", "Ritmika")}</strong><span>{metricScore(feedReleaseModal.avg_structure_rhythm)}</span></article>
+              <article><strong>{tr("common.styleMetric", "Stils")}</strong><span>{metricScore(feedReleaseModal.avg_style_execution)}</span></article>
+              <article><strong>{tr("common.individualityMetric", "Individualitate")}</strong><span>{metricScore(feedReleaseModal.avg_individuality_charisma)}</span></article>
+            </div>
+            <div className="feed-modal-actions">
+              <button type="button" className="liquid-pill-btn" onClick={() => setFeedReleaseModal(null)}>
+                {tr("misc.closeMenu", "Aizvert")}
+              </button>
+              <button
+                type="button"
+                className="liquid-pill-btn liquid-accent-btn"
+                onClick={() => {
+                  const targetId = feedReleaseModal.id;
+                  setFeedReleaseModal(null);
+                  navigate(`/releases/${targetId}`);
+                }}
+              >
+                {tr("pages.discover.details", "Skatit detalas")}
+              </button>
             </div>
           </section>
-        )}
-
-        <section className="content-wrap">
-          {sessionError && <p className="error">{sessionError}</p>}
-          <Routes>
-            <Route path="/dashboard" element={<DashboardPage user={user} lang={lang} t={tr} />} />
-            <Route path="/about" element={<AboutPage lang={lang} t={tr} />} />
-            <Route path="/discover" element={<DiscoverPage lang={lang} t={tr} />} />
-            <Route path="/" element={<ReleasesPage user={user} lang={lang} t={tr} />} />
-            <Route path="/artist/drop" element={<ArtistDropPage user={user} lang={lang} t={tr} />} />
-            <Route path="/live-feed" element={<LiveFeedPage lang={lang} t={tr} />} />
-            <Route path="/leaderboard" element={<LeaderboardPage lang={lang} t={tr} />} />
-            <Route path="/radar" element={<ReleaseRadarPage />} />
-            <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/releases/:releaseId" element={<ReleaseDetailsPage user={user} lang={lang} t={tr} />} />
-            <Route path="/my-releases" element={<MyReleasesPage user={user} lang={lang} t={tr} />} />
-            <Route path="/studio" element={<StudioPage user={user} lang={lang} t={tr} />} />
-            <Route path="/stats" element={<StatsPage lang={lang} t={tr} />} />
-            <Route path="/users" element={<UserCommentsPage lang={lang} t={tr} />} />
-            <Route path="/users/:userId" element={<UserProfileInsightsPage lang={lang} t={tr} />} />
-            <Route path="/admin/users" element={<AdminUsersPage user={user} lang={lang} t={tr} />} />
-            <Route path="/profile" element={<ProfilePage user={user} lang={lang} t={tr} />} />
-            <Route path="/auth" element={<AuthPage onAuth={setUser} lang={lang} t={tr} />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage lang={lang} t={tr} />} />
-            <Route path="/reset-password" element={<ResetPasswordPage lang={lang} t={tr} />} />
-          </Routes>
-        </section>
-      </main>
+        </>
+      )}
       {toast && <div className={`toast ${toast.type ?? "info"}`}>{toast.message}</div>}
     </div>
   )

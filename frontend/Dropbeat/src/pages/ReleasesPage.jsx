@@ -284,7 +284,17 @@ export function ReleasesPage({ user }) {
             </div>
             {item.cover_url && <CoverImage className="cover-image" src={normalizeCoverUrl(item.cover_url)} alt={item.title} />}
             <h3>{item.title}</h3>
-            <p>{item.artist?.stage_name} - {item.custom_genre_name || item.genre?.name}</p>
+            <p>
+              {item.artist?.id ? (
+                <Link to={`/artists/${item.artist.id}`} className="releases-artist-link" onClick={(e) => e.stopPropagation()}>
+                  {item.artist?.stage_name}
+                </Link>
+              ) : (
+                item.artist?.stage_name
+              )}
+              {" — "}
+              {item.custom_genre_name || item.genre?.name}
+            </p>
             <small>{item.release_date} | {item.type.toUpperCase()} | {formatDuration(item.duration_seconds)}</small>
             {item.description && <p className="small-text">{item.description}</p>}
             {canManageRelease(item) && (
