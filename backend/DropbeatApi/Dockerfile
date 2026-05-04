@@ -38,5 +38,6 @@ RUN mkdir -p storage bootstrap/cache \
 EXPOSE 10000
 
 # Render injects $PORT at runtime
-CMD sh -c "php artisan config:clear && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"
+# Run one-time-safe setup on each boot so paid Shell is not required.
+CMD sh -c "php artisan config:clear && php artisan migrate --force && (php artisan storage:link || true) && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"
 
