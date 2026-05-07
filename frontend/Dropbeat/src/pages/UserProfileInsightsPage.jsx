@@ -33,7 +33,10 @@ export function UserProfileInsightsPage() {
   return (
     <section className="panel">
       <h2>{details.user.name}</h2>
-      <p className="muted">{details.user.email} | role: {details.user.role}</p>
+      <p className="muted">
+        role: {details.user.role}
+        {details.user.artist?.stage_name ? ` | niks: ${details.user.artist.stage_name}` : ""}
+      </p>
       <div className="kpi-grid">
         <article className="card"><h3>{details.comment_count}</h3><p>Komentari</p></article>
         <article className="card"><h3>{details.rating_count ?? 0}</h3><p>Novertejumi</p></article>

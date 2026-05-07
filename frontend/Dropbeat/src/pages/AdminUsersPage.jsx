@@ -95,7 +95,7 @@ export function AdminUsersPage({ user }) {
       {message && <p className="ok">{message}</p>}
       {error && <p className="error">{error}</p>}
       <div className="filters">
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Meklet pec varda vai e-pasta" />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Meklet pec varda vai nika" />
         <button type="button" onClick={() => loadUsers(query)}>Meklet</button>
       </div>
       <div className="kpi-grid">

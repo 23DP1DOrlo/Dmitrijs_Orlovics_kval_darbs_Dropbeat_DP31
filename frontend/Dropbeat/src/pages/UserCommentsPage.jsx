@@ -68,7 +68,7 @@ export function UserCommentsPage() {
       <p className="muted">Mekle artistus un klausitajus, apskati vinu komentarus un novertejumus.</p>
       <div className="filters">
         <div className="search-suggest-wrap">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Meklet pec varda vai e-pasta" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Meklet pec varda vai nika" />
           {query.trim().length > 0 && (
             <div className="search-suggest-list">
               {loadingSuggestions && <p className="small-text">Meklesana...</p>}
@@ -98,8 +98,10 @@ export function UserCommentsPage() {
         {users.map((user) => (
           <article key={user.id} className={`card clickable-card ${selected?.id === user.id ? "active-card" : ""}`} onClick={() => loadDetails(user)}>
             <h3>{user.name}</h3>
-            <p>{user.email}</p>
-            <p className="small-text">Loma: {user.role}{user.artist?.stage_name ? ` (${user.artist.stage_name})` : ""}</p>
+            <p className="small-text">
+              Loma: {user.role}
+              {user.artist?.stage_name ? ` | Niks: ${user.artist.stage_name}` : ""}
+            </p>
             <small>Komentari: {user.release_comments_count}</small>
             <small>Novertejumi: {user.release_ratings_count ?? 0}</small>
             <p><Link to={`/users/${user.id}`} onClick={(event) => event.stopPropagation()}>Atvert profilu</Link></p>

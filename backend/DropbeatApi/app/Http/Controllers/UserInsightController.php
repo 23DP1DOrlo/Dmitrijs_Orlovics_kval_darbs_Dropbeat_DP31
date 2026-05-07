@@ -21,20 +21,24 @@ class UserInsightController extends Controller
             ->where(function ($inner) use ($query) {
                 $inner
                     ->where('name', 'like', "%{$query}%")
-                    ->orWhere('email', 'like', "%{$query}%");
+                    ->orWhereHas('artist', function ($artistQuery) use ($query) {
+                        $artistQuery->where('stage_name', 'like', "%{$query}%");
+                    });
             })
             ->with('artist:id,user_id,stage_name')
             ->withCount('releaseComments')
             ->withCount('releaseRatings')
             ->orderByDesc('release_comments_count')
             ->limit(20)
-            ->get(['id', 'name', 'email', 'role']);
+            ->get(['id', 'name', 'role']);
 
         return $users;
     }
 
     public function commentsByUser(User $user)
     {
+        $user->load('artist:id,user_id,stage_name');
+
         $comments = ReleaseComment::query()
             ->where('user_id', $user->id)
             ->with(['release:id,title,cover_url,artist_id', 'release.artist:id,stage_name'])
@@ -48,7 +52,15 @@ class UserInsightController extends Controller
             ->get();
 
         return response()->json([
-            'user' => $user->only(['id', 'name', 'email', 'role']),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->role,
+                'artist' => $user->artist ? [
+                    'id' => $user->artist->id,
+                    'stage_name' => $user->artist->stage_name,
+                ] : null,
+            ],
             'comment_count' => $comments->count(),
             'comments' => $comments,
             'rating_count' => $ratings->count(),

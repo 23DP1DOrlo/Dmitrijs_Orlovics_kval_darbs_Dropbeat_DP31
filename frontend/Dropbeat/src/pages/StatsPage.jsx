@@ -52,7 +52,6 @@ export function StatsPage() {
             {overview.top_users.map((user) => (
               <article key={user.id} className="card">
                 <h3>{user.name}</h3>
-                <p>{user.email}</p>
                 <small>{user.role} • Komentari: {user.release_comments_count} • Novertejumi: {user.release_ratings_count}</small>
                 <p><Link to={`/users/${user.id}`}>Atvert aktivitati</Link></p>
               </article>

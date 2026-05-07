@@ -1,6 +1,6 @@
 import './App.css'
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { CoverImage } from "./components/CoverImage";
 import { AuthPage } from "./pages/AuthPage";
@@ -573,6 +573,8 @@ function App() {
   const [headerSearchOpen, setHeaderSearchOpen] = useState(false);
   const [headerSearchResults, setHeaderSearchResults] = useState({ releases: [], artists: [] });
   const headerSearchRef = useRef(null);
+  const sidebarNavRef = useRef(null);
+  const [activeNavIndicator, setActiveNavIndicator] = useState({ top: 0, height: 0, visible: false });
   const t = translations[lang] ?? translations.lv;
   const headerLogo = theme === "light" && !lightLogoMissing ? "/dropbeatlogo_light.png" : "/dropbeatlogo.png";
   const langIndex = { ru: 0, en: 1, lv: 2 }[lang] ?? 2;
@@ -580,6 +582,29 @@ function App() {
     const value = key.split(".").reduce((acc, part) => (acc && typeof acc === "object" ? acc[part] : undefined), t);
     return typeof value === "string" ? value : fallback;
   };
+
+  const updateActiveNavIndicator = useCallback(() => {
+    const nav = sidebarNavRef.current;
+    if (!nav) return;
+
+    const activeLink = nav.querySelector("a.active");
+    if (!activeLink) {
+      setActiveNavIndicator((prev) => (prev.visible ? { top: 0, height: 0, visible: false } : prev));
+      return;
+    }
+
+    const navRect = nav.getBoundingClientRect();
+    const linkRect = activeLink.getBoundingClientRect();
+    const linkHeight = linkRect.height;
+    const indicatorHeight = Math.max(linkHeight - 12, 16);
+    const top = linkRect.top - navRect.top + (linkHeight - indicatorHeight) / 2;
+
+    setActiveNavIndicator({
+      top,
+      height: indicatorHeight,
+      visible: true,
+    });
+  }, []);
 
   const logout = () => {
     localStorage.removeItem("dropbeat_token");
@@ -633,6 +658,28 @@ function App() {
     setMobileMenuOpen(false);
     setHeaderSearchOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      updateActiveNavIndicator();
+    });
+
+    const onResize = () => updateActiveNavIndicator();
+    window.addEventListener("resize", onResize);
+
+    const nav = sidebarNavRef.current;
+    let observer = null;
+    if (nav && typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(() => updateActiveNavIndicator());
+      observer.observe(nav);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", onResize);
+      observer?.disconnect();
+    };
+  }, [location.pathname, user?.role, mobileMenuOpen, lang, updateActiveNavIndicator]);
 
   useEffect(() => {
     const term = headerSearch.trim();
@@ -800,7 +847,12 @@ function App() {
         <div className="logo-badge">
           <span className="sidebar-dot" aria-hidden="true" />
         </div>
-        <nav className="sidebar-nav" onClick={() => setMobileMenuOpen(false)}>
+        <nav className="sidebar-nav" ref={sidebarNavRef} onClick={() => setMobileMenuOpen(false)}>
+          <span
+            className={`sidebar-active-indicator${activeNavIndicator.visible ? " is-visible" : ""}`}
+            aria-hidden="true"
+            style={{ transform: `translateY(${activeNavIndicator.top}px)`, height: `${activeNavIndicator.height}px` }}
+          />
           <NavLink to="/dashboard"><span className="nav-mark" aria-hidden="true"><NavIcon type="dashboard" /></span><span>{t.nav.dashboard}</span></NavLink>
           <NavLink to="/about"><span className="nav-mark" aria-hidden="true"><NavIcon type="about" /></span><span>{t.nav.about}</span></NavLink>
           <div className="sidebar-separator" />

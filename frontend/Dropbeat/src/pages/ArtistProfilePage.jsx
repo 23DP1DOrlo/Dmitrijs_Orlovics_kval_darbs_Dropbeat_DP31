@@ -84,6 +84,12 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
   const avatarUrl = normalizeCoverUrl(profile?.avatar_url);
   const avgAll = stats?.average_composite_score;
   const hasAvg = avgAll != null && Number(stats?.rated_releases_count) > 0;
+  const allReleases = releases ?? [];
+  const singleReleases = allReleases.filter((item) => String(item.type ?? "").toLowerCase() === "single");
+  const albumEpReleases = allReleases.filter((item) => {
+    const type = String(item.type ?? "").toLowerCase();
+    return type === "album" || type === "ep";
+  });
 
   return (
     <section className="panel artist-profile-page">
@@ -148,41 +154,86 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
       </header>
 
       <h2 className="artist-profile-section-title">{t("pages.artist.discography", "Diskografija")}</h2>
-      {(releases ?? []).length === 0 ? (
+      {allReleases.length === 0 ? (
         <p className="muted">{t("pages.artist.noReleases", "Sis makslinieks vel nav publicojis relizu.")}</p>
       ) : (
-        <ul className="artist-release-grid">
-          {(releases ?? []).map((item) => {
-            const score = releaseComposite(item);
-            const rated = Number(item.ratings_count ?? 0) > 0;
-            return (
-              <li key={item.id}>
-                <Link className="artist-release-card" to={`/releases/${item.id}`}>
-                  <div className="artist-release-cover-wrap">
-                    <CoverImage className="artist-release-cover" src={normalizeCoverUrl(item.cover_url)} alt={item.title} />
-                    <span className="artist-release-type">{String(item.type ?? "single").toUpperCase()}</span>
-                  </div>
-                  <div className="artist-release-body">
-                    <h3 className="artist-release-title">{item.title}</h3>
-                    <p className="artist-release-sub">
-                      {item.custom_genre_name || item.genre?.name}
-                      {" · "}
-                      {item.release_date}
-                    </p>
-                    <div className="artist-release-score-row">
-                      <span className={`artist-release-score ${rated ? "" : "is-muted"}`}>
-                        ★ {rated ? score.toFixed(1) : "—"}
-                      </span>
-                      {!rated && (
-                        <span className="artist-release-score-note">{t("pages.artist.noVotes", "Nav balsu")}</span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <h3>{t("pages.artist.singles", "Singli")}</h3>
+          {singleReleases.length === 0 ? (
+            <p className="muted">{t("pages.artist.noSingles", "Nav publicetu singlu.")}</p>
+          ) : (
+            <ul className="artist-release-grid">
+              {singleReleases.map((item) => {
+                const score = releaseComposite(item);
+                const rated = Number(item.ratings_count ?? 0) > 0;
+                return (
+                  <li key={item.id}>
+                    <Link className="artist-release-card" to={`/releases/${item.id}`}>
+                      <div className="artist-release-cover-wrap">
+                        <CoverImage className="artist-release-cover" src={normalizeCoverUrl(item.cover_url)} alt={item.title} />
+                        <span className="artist-release-type">{String(item.type ?? "single").toUpperCase()}</span>
+                      </div>
+                      <div className="artist-release-body">
+                        <h3 className="artist-release-title">{item.title}</h3>
+                        <p className="artist-release-sub">
+                          {item.custom_genre_name || item.genre?.name}
+                          {" · "}
+                          {item.release_date}
+                        </p>
+                        <div className="artist-release-score-row">
+                          <span className={`artist-release-score ${rated ? "" : "is-muted"}`}>
+                            ★ {rated ? score.toFixed(1) : "—"}
+                          </span>
+                          {!rated && (
+                            <span className="artist-release-score-note">{t("pages.artist.noVotes", "Nav balsu")}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <h3>{t("pages.artist.albumsEp", "Albumi / EP")}</h3>
+          {albumEpReleases.length === 0 ? (
+            <p className="muted">{t("pages.artist.noAlbumsEp", "Nav publicetu albumu vai EP.")}</p>
+          ) : (
+            <ul className="artist-release-grid">
+              {albumEpReleases.map((item) => {
+                const score = releaseComposite(item);
+                const rated = Number(item.ratings_count ?? 0) > 0;
+                return (
+                  <li key={item.id}>
+                    <Link className="artist-release-card" to={`/releases/${item.id}`}>
+                      <div className="artist-release-cover-wrap">
+                        <CoverImage className="artist-release-cover" src={normalizeCoverUrl(item.cover_url)} alt={item.title} />
+                        <span className="artist-release-type">{String(item.type ?? "single").toUpperCase()}</span>
+                      </div>
+                      <div className="artist-release-body">
+                        <h3 className="artist-release-title">{item.title}</h3>
+                        <p className="artist-release-sub">
+                          {item.custom_genre_name || item.genre?.name}
+                          {" · "}
+                          {item.release_date}
+                        </p>
+                        <div className="artist-release-score-row">
+                          <span className={`artist-release-score ${rated ? "" : "is-muted"}`}>
+                            ★ {rated ? score.toFixed(1) : "—"}
+                          </span>
+                          {!rated && (
+                            <span className="artist-release-score-note">{t("pages.artist.noVotes", "Nav balsu")}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
       )}
     </section>
   );

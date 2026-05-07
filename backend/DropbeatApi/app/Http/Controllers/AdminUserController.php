@@ -22,7 +22,9 @@ class AdminUserController extends Controller
         return User::query()
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where('name', 'like', "%{$query}%")
-                    ->orWhere('email', 'like', "%{$query}%");
+                    ->orWhereHas('artist', function ($artistQuery) use ($query) {
+                        $artistQuery->where('stage_name', 'like', "%{$query}%");
+                    });
             })
             ->with('artist.profile')
             ->orderByDesc('id')
