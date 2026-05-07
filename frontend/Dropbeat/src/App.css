@@ -2406,6 +2406,7 @@ td {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;
+  overflow: visible;
 }
 
 .leaderboard-lanes {
@@ -2424,12 +2425,17 @@ td {
   grid-template-columns: auto 84px 1fr;
   gap: 0.75rem;
   align-items: center;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
   transform-style: preserve-3d;
   transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
   transition: transform var(--dur-slow) var(--ease-smooth), box-shadow var(--dur-normal) var(--ease-soft), border-color var(--dur-normal) var(--ease-soft);
 }
 
-.leaderboard-card:hover {
+.leaderboard-card:hover,
+.leaderboard-card:focus-within {
+  z-index: 30;
   transform: perspective(1000px) rotateX(4deg) rotateY(-5deg) translateY(-2px);
 }
 
@@ -2488,6 +2494,7 @@ td {
   position: relative;
   width: fit-content;
   margin: 0.2rem 0 0.15rem;
+  z-index: 2;
 }
 
 .leaderboard-rating-badge {
