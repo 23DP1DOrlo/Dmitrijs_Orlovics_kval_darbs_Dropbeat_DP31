@@ -63,6 +63,13 @@ export function ProfilePage({ user }) {
     return value;
   };
 
+  const normalizeSocialUrl = (value) => {
+    const raw = String(value ?? "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return `https://${raw}`;
+  };
+
   const submitBase = async (event) => {
     event.preventDefault();
     setMessage("");
@@ -73,7 +80,7 @@ export function ProfilePage({ user }) {
       localStorage.setItem("dropbeat_user", JSON.stringify(data));
       setMessage("Pamata profils atjaunots.");
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas atjaunot profilu.");
+      setError(requestError?.response?.data?.message ?? "Neizdevās atjaunot profilu.");
     }
   };
 
@@ -84,9 +91,9 @@ export function ProfilePage({ user }) {
     try {
       const { data } = await api.put("/me/artist-profile", form);
       setProfile(data);
-      setMessage("Makslinieka profils veiksmigi atjaunots.");
+      setMessage("Mākslinieka profils veiksmīgi atjaunots.");
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas atjaunot makslinieka profilu.");
+      setError(requestError?.response?.data?.message ?? "Neizdevās atjaunot mākslinieka profilu.");
     }
   };
 
@@ -103,9 +110,9 @@ export function ProfilePage({ user }) {
       });
       setForm((prev) => ({ ...prev, avatar_url: data.avatar_url }));
       setProfile((prev) => (prev ? { ...prev, profile: { ...(prev.profile ?? {}), avatar_url: data.avatar_url } } : prev));
-      setMessage("Ava saglabata. Neaizmirsti atjaunot profilu.");
+      setMessage("Avatars saglabāts. Neaizmirsti atjaunot profilu.");
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas augshupieladet avataru.");
+      setError(requestError?.response?.data?.message ?? "Neizdevās augšupielādēt avataru.");
     } finally {
       setUploadingAvatar(false);
     }
@@ -119,19 +126,19 @@ export function ProfilePage({ user }) {
       <div className="profile-head">
         <div className="avatar">{(baseForm.name || "U").slice(0, 1).toUpperCase()}</div>
         <div>
-          <h3>{baseForm.name || "Lietotajs"}</h3>
+          <h3>{baseForm.name || "Lietotājs"}</h3>
           <p className="muted">Konts: {baseProfile?.email ?? user?.email}</p>
         </div>
       </div>
       <form className="form-grid" onSubmit={submitBase}>
-        <input value={baseForm.name} onChange={(e) => setBaseForm((p) => ({ ...p, name: e.target.value }))} placeholder="Vards" />
+        <input value={baseForm.name} onChange={(e) => setBaseForm((p) => ({ ...p, name: e.target.value }))} placeholder="Vārds" />
         <input value={baseForm.email} onChange={(e) => setBaseForm((p) => ({ ...p, email: e.target.value }))} placeholder="E-pasts" />
-        <button type="submit">Saglabat pamata profilu</button>
+        <button type="submit">Saglabāt pamata profilu</button>
       </form>
 
       {user?.role === "artist" && (
         <>
-          <h3>Makslinieka profils</h3>
+          <h3>Mākslinieka profils</h3>
           <div className="profile-head">
             {form.avatar_url ? (
               <img className="avatar avatar-image" src={normalizeImageUrl(form.avatar_url)} alt="Artist avatar" />
@@ -139,22 +146,46 @@ export function ProfilePage({ user }) {
               <div className="avatar">{(form.stage_name || "A").slice(0, 1).toUpperCase()}</div>
             )}
             <div>
-              <h3>{form.stage_name || "Makslinieks"}</h3>
+              <h3>{form.stage_name || "Mākslinieks"}</h3>
               <p className="muted">Konts: {profile?.user?.email ?? user.email}</p>
+              {(form.instagram_url?.trim() || form.youtube_url?.trim()) && (
+                <div className="artist-profile-social">
+                  {form.instagram_url?.trim() && (
+                    <a
+                      className="artist-profile-social-link"
+                      href={normalizeSocialUrl(form.instagram_url)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Instagram
+                    </a>
+                  )}
+                  {form.youtube_url?.trim() && (
+                    <a
+                      className="artist-profile-social-link"
+                      href={normalizeSocialUrl(form.youtube_url)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      YouTube
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <form className="form-grid" onSubmit={submit}>
-            <input value={form.stage_name} onChange={(e) => setForm((p) => ({ ...p, stage_name: e.target.value }))} placeholder="Skatuves vards" />
+            <input value={form.stage_name} onChange={(e) => setForm((p) => ({ ...p, stage_name: e.target.value }))} placeholder="Skatuves vārds" />
             <input value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} placeholder="Valsts kods" />
-            <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} placeholder="Pilseta" />
+            <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} placeholder="Pilsēta" />
             <input value={form.label_name} onChange={(e) => setForm((p) => ({ ...p, label_name: e.target.value }))} placeholder="Leibls" />
             <textarea value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} placeholder="Bio" rows={4} />
             <input value={form.instagram_url} onChange={(e) => setForm((p) => ({ ...p, instagram_url: e.target.value }))} placeholder="Instagram URL" />
             <input value={form.youtube_url} onChange={(e) => setForm((p) => ({ ...p, youtube_url: e.target.value }))} placeholder="YouTube URL" />
             <input value={form.avatar_url} onChange={(e) => setForm((p) => ({ ...p, avatar_url: e.target.value }))} placeholder="Avatar URL" />
             <input type="file" accept="image/*" onChange={(e) => uploadAvatar(e.target.files?.[0])} />
-            {uploadingAvatar && <p className="small-text">Augshupieladeju avataru...</p>}
-            <button type="submit">Atjaunot makslinieka profilu</button>
+            {uploadingAvatar && <p className="small-text">Augšupielādēju avataru...</p>}
+            <button type="submit">Atjaunot mākslinieka profilu</button>
           </form>
         </>
       )}

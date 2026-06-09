@@ -7,6 +7,7 @@ use App\Models\ArtistProfile;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
@@ -17,14 +18,19 @@ class AdminUserController extends Controller
             return $response;
         }
 
-        $query = $request->string('query')->toString();
+        $query = mb_strtolower(trim($request->string('query')->toString()));
+        $pattern = "%{$query}%";
 
         return User::query()
-            ->when($query !== '', function ($builder) use ($query) {
-                $builder->where('name', 'like', "%{$query}%")
-                    ->orWhereHas('artist', function ($artistQuery) use ($query) {
-                        $artistQuery->where('stage_name', 'like', "%{$query}%");
-                    });
+            ->when($query !== '', function ($builder) use ($pattern) {
+                $builder->where(function ($inner) use ($pattern) {
+                    $inner->whereRaw('LOWER(name) LIKE ?', [$pattern])
+                        ->orWhereHas('artist', function ($artistQuery) use ($pattern) {
+                            $artistQuery
+                                ->whereRaw('LOWER(stage_name) LIKE ?', [$pattern])
+                                ->orWhereHas('user', fn ($userQuery) => $userQuery->whereRaw('LOWER(name) LIKE ?', [$pattern]));
+                        });
+                });
             })
             ->with('artist.profile')
             ->orderByDesc('id')
@@ -96,11 +102,32 @@ class AdminUserController extends Controller
         }
 
         if ($request->user()->id === $user->id) {
-            return response()->json(['message' => 'Admin nevar dzest pats sevi.'], 422);
+            return response()->json(['message' => 'Admins nevar dzēst pats sevi.'], 422);
         }
 
         $user->delete();
         return response()->json([], 204);
+    }
+
+    public function destroyArtistAvatar(Request $request, Artist $artist)
+    {
+        if ($response = $this->ensureAdmin($request)) {
+            return $response;
+        }
+
+        $profile = ArtistProfile::firstWhere('artist_id', $artist->id);
+        if (! $profile || ! $profile->avatar_url) {
+            return response()->json(['message' => 'Avatar nav atrasts.'], 404);
+        }
+
+        $path = parse_url((string) $profile->avatar_url, PHP_URL_PATH) ?: '';
+        if (str_starts_with($path, '/storage/')) {
+            Storage::disk('public')->delete(substr($path, strlen('/storage/')));
+        }
+
+        $profile->update(['avatar_url' => null]);
+
+        return response()->json(['message' => 'Avatars dzēsts.']);
     }
 
     private function ensureAdmin(Request $request): ?JsonResponse

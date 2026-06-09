@@ -25,9 +25,9 @@ export function ResetPasswordPage({ t = (key, fallback) => fallback }) {
         password,
         password_confirmation: passwordConfirmation,
       });
-      setMessage("Parole veiksmigi atjaunota. Tagad vari ienakt ar jauno paroli.");
+      setMessage("Parole veiksmīgi atjaunota. Tagad vari ienākt ar jauno paroli.");
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas atjaunot paroli.");
+      setError(requestError?.response?.data?.message ?? "Neizdevās atjaunot paroli.");
     } finally {
       setLoading(false);
     }
@@ -37,8 +37,8 @@ export function ResetPasswordPage({ t = (key, fallback) => fallback }) {
     return (
       <div className="auth-screen">
         <section className="panel auth-panel compact-auth-panel">
-          <h2>{t("auth.resetTitle", "Paroles atjaunosana")}</h2>
-          <p className="error auth-message">{t("auth.invalidResetLink", "Nederiga atjaunosanas saite. Pieprasi jaunu saiti velreiz.")}</p>
+          <h2>{t("auth.resetTitle", "Paroles atjaunošana")}</h2>
+          <p className="error auth-message">{t("auth.invalidResetLink", "Nederīga atjaunošanas saite. Pieprasi jaunu saiti vēlreiz.")}</p>
         </section>
       </div>
     );
@@ -48,8 +48,8 @@ export function ResetPasswordPage({ t = (key, fallback) => fallback }) {
     <div className="auth-screen">
       <section className="panel auth-panel compact-auth-panel">
         <header className="auth-head">
-          <p className="tag">{t("auth.security", "Security")}</p>
-          <h2>{t("auth.setNewPassword", "Iestati jaunu paroli")}</h2>
+          <p className="tag">{t("auth.security", "Drošība")}</p>
+          <h2>{t("auth.setNewPassword", "Iestatīt jaunu paroli")}</h2>
           <p className="muted">{email}</p>
         </header>
         <form className="form-grid auth-form-grid single-column" onSubmit={submit}>
@@ -62,12 +62,12 @@ export function ResetPasswordPage({ t = (key, fallback) => fallback }) {
           />
           <input
             type="password"
-            placeholder={t("auth.repeatNewPassword", "Atkartot jauno paroli")}
+            placeholder={t("auth.repeatNewPassword", "Atkārtot jauno paroli")}
             value={passwordConfirmation}
             onChange={(e) => setPasswordConfirmation(e.target.value)}
             required
           />
-          <button type="submit" disabled={loading}>{loading ? t("auth.saving", "Saglabaju...") : t("auth.savePassword", "Saglabat paroli")}</button>
+          <button type="submit" disabled={loading}>{loading ? t("auth.saving", "Saglabāju...") : t("auth.savePassword", "Saglabāt paroli")}</button>
         </form>
         {message && <p className="ok auth-message">{message}</p>}
         {error && <p className="error auth-message">{error}</p>}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { useNavigate } from "react-router-dom";
 import { CoverImage } from "../components/CoverImage";
+import { ArtistIdentity } from "../components/ArtistIdentity";
 
 export function LeaderboardPage({ t = (key, fallback) => fallback }) {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ export function LeaderboardPage({ t = (key, fallback) => fallback }) {
         });
         setRows(enriched);
       } catch {
-        setError(t("pages.leaderboard.loadError", "Neizdevas ieladet leaderboard."));
+        setError(t("pages.leaderboard.loadError", "Neizdevās ielādēt reitingu."));
         setRows([]);
       } finally {
         setLoading(false);
@@ -88,30 +89,30 @@ export function LeaderboardPage({ t = (key, fallback) => fallback }) {
     <section className="panel">
       <div className="leaderboard-head">
         <div>
-          <h2>{t("pages.leaderboard.title", "Leaderboard")}</h2>
-          <p className="muted">{t("pages.leaderboard.subtitle", "Top relizes pec auditorijas novertejuma.")}</p>
+      <h2>{t("pages.leaderboard.title", "Reitings")}</h2>
+          <p className="muted">{t("pages.leaderboard.subtitle", "Top relīzes pēc auditorijas novērtējuma.")}</p>
         </div>
         <div className="leaderboard-filters">
           <select value={period} onChange={(event) => setPeriod(event.target.value)}>
-            <option value="this_month">{t("pages.leaderboard.thisMonth", "Sis menesis")}</option>
-            <option value="last_month">{t("pages.leaderboard.lastMonth", "Ieprieksejais menesis")}</option>
-            <option value="last_3_months">{t("pages.leaderboard.last3Months", "Pedejie 3 menesi")}</option>
+            <option value="this_month">{t("pages.leaderboard.thisMonth", "Šis mēnesis")}</option>
+            <option value="last_month">{t("pages.leaderboard.lastMonth", "Iepriekšējais mēnesis")}</option>
+            <option value="last_3_months">{t("pages.leaderboard.last3Months", "Pēdējie 3 mēneši")}</option>
             <option value="all">{t("pages.leaderboard.allTime", "Visu laiku")}</option>
           </select>
           <select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
-            <option value="score">{t("pages.leaderboard.byScore", "Pec score")}</option>
-            <option value="votes">{t("pages.leaderboard.byVotes", "Pec vote skaita")}</option>
-            <option value="fresh">{t("pages.leaderboard.byFresh", "Pec svaiguma")}</option>
+            <option value="score">{t("pages.leaderboard.byScore", "Pēc score")}</option>
+            <option value="votes">{t("pages.leaderboard.byVotes", "Pēc balsu skaita")}</option>
+            <option value="fresh">{t("pages.leaderboard.byFresh", "Pēc svaiguma")}</option>
           </select>
         </div>
       </div>
 
       {error && <p className="error">{error}</p>}
-      {loading && <p className="small-text">{t("pages.leaderboard.loading", "Ieladejam top relizes...")}</p>}
+      {loading && <p className="small-text">{t("pages.leaderboard.loading", "Ielādējam top relīzes...")}</p>}
 
       <div className="leaderboard-lanes">
         <section className="leaderboard-lane">
-          <h3>{t("pages.leaderboard.singles", "Singles Leaderboard")}</h3>
+          <h3>{t("pages.leaderboard.singles", "Singlu tops")}</h3>
           <div className="leaderboard-grid">
             {singlesRows.map((item, idx) => (
               <article className={`card leaderboard-card clickable-card ${idx < 3 ? `leaderboard-top-${idx + 1}` : ""}`} key={item.id} onClick={() => navigate(`/releases/${item.id}`)}>
@@ -119,26 +120,26 @@ export function LeaderboardPage({ t = (key, fallback) => fallback }) {
                 {item.cover_url && <CoverImage className="leaderboard-cover" src={item.cover_url} alt={item.title} />}
                 <div className="leaderboard-meta">
                   <strong>{item.title}</strong>
-                  <p>{item.artist?.stage_name ?? t("common.unknownArtist", "Unknown artist")}</p>
+                  <p><ArtistIdentity artist={item.artist} unknown={t("common.unknownArtist", "Nezināms mākslinieks")} /></p>
                   <div className="leaderboard-rating-wrap">
                     <div className="leaderboard-rating-badge">{item.average.toFixed(1)}</div>
                     <div className="leaderboard-rating-tooltip">
                       <p>{t("common.textMetric", "Teksts")}: {Number(item.avg_rhymes_images ?? 0).toFixed(1)}</p>
                       <p>{t("common.rhythmMetric", "Ritmika")}: {Number(item.avg_structure_rhythm ?? 0).toFixed(1)}</p>
                       <p>{t("common.styleMetric", "Stils")}: {Number(item.avg_style_execution ?? 0).toFixed(1)}</p>
-                      <p>{t("common.individualityMetric", "Individualitate")}: {Number(item.avg_individuality_charisma ?? 0).toFixed(1)}</p>
+                      <p>{t("common.individualityMetric", "Individualitāte")}: {Number(item.avg_individuality_charisma ?? 0).toFixed(1)}</p>
                     </div>
                   </div>
-                  <small>{t("pages.leaderboard.votes", "Votes")}: {item.ratings_count ?? 0}</small>
+                  <small>{t("pages.leaderboard.votes", "Balsis")}: {item.ratings_count ?? 0}</small>
                 </div>
               </article>
             ))}
           </div>
-          {!loading && singlesRows.length === 0 && <p className="muted">{t("pages.leaderboard.noSingles", "Nav single datu saja perioda.")}</p>}
+          {!loading && singlesRows.length === 0 && <p className="muted">{t("pages.leaderboard.noSingles", "Nav singlu datu šajā periodā.")}</p>}
         </section>
 
         <section className="leaderboard-lane">
-          <h3>{t("pages.leaderboard.albums", "Albums Leaderboard")}</h3>
+          <h3>{t("pages.leaderboard.albums", "Albumu tops")}</h3>
           <div className="leaderboard-grid">
             {albumsRows.map((item, idx) => (
               <article className={`card leaderboard-card clickable-card ${idx < 3 ? `leaderboard-top-${idx + 1}` : ""}`} key={item.id} onClick={() => navigate(`/releases/${item.id}`)}>
@@ -146,27 +147,27 @@ export function LeaderboardPage({ t = (key, fallback) => fallback }) {
                 {item.cover_url && <CoverImage className="leaderboard-cover" src={item.cover_url} alt={item.title} />}
                 <div className="leaderboard-meta">
                   <strong>{item.title}</strong>
-                  <p>{item.artist?.stage_name ?? t("common.unknownArtist", "Unknown artist")}</p>
+                  <p><ArtistIdentity artist={item.artist} unknown={t("common.unknownArtist", "Nezināms mākslinieks")} /></p>
                   <div className="leaderboard-rating-wrap">
                     <div className="leaderboard-rating-badge">{item.average.toFixed(1)}</div>
                     <div className="leaderboard-rating-tooltip">
                       <p>{t("common.textMetric", "Teksts")}: {Number(item.avg_rhymes_images ?? 0).toFixed(1)}</p>
                       <p>{t("common.rhythmMetric", "Ritmika")}: {Number(item.avg_structure_rhythm ?? 0).toFixed(1)}</p>
                       <p>{t("common.styleMetric", "Stils")}: {Number(item.avg_style_execution ?? 0).toFixed(1)}</p>
-                      <p>{t("common.individualityMetric", "Individualitate")}: {Number(item.avg_individuality_charisma ?? 0).toFixed(1)}</p>
+                      <p>{t("common.individualityMetric", "Individualitāte")}: {Number(item.avg_individuality_charisma ?? 0).toFixed(1)}</p>
                     </div>
                   </div>
-                  <small>{t("pages.leaderboard.votes", "Votes")}: {item.ratings_count ?? 0}</small>
+                  <small>{t("pages.leaderboard.votes", "Balsis")}: {item.ratings_count ?? 0}</small>
                 </div>
               </article>
             ))}
           </div>
-          {!loading && albumsRows.length === 0 && <p className="muted">{t("pages.leaderboard.noAlbums", "Nav album datu saja perioda.")}</p>}
+          {!loading && albumsRows.length === 0 && <p className="muted">{t("pages.leaderboard.noAlbums", "Nav albumu datu šajā periodā.")}</p>}
         </section>
       </div>
 
       {!loading && singlesRows.length === 0 && albumsRows.length === 0 && (
-        <p className="muted">{t("pages.leaderboard.noData", "Saja perioda nav datu leaderboardam.")}</p>
+        <p className="muted">{t("pages.leaderboard.noData", "Šajā periodā nav datu reitingam.")}</p>
       )}
     </section>
   );

@@ -40,7 +40,6 @@ export function CoverImage({ src, alt, className }) {
   }, [src]);
 
   if (!candidates.length) return null;
-
   return (
     <img
       className={className}

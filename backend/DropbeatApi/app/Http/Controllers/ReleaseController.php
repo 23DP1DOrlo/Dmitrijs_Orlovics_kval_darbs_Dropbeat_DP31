@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Artist;
 use App\Models\Release;
 use App\Models\ReleaseComment;
 use App\Models\ReleaseRating;
 use App\Models\ReleaseStat;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +33,7 @@ class ReleaseController extends Controller
         ]);
 
         $query = Release::query()
-            ->with(['artist', 'artists', 'genre', 'stats'])
+            ->with(['artist.user', 'artists.user', 'genre', 'stats'])
             ->withCount('ratings')
             ->withCount('comments')
             ->withAvg('ratings as avg_rhymes_images', 'rhymes_images')
@@ -39,19 +41,29 @@ class ReleaseController extends Controller
             ->withAvg('ratings as avg_style_execution', 'style_execution')
             ->withAvg('ratings as avg_individuality_charisma', 'individuality_charisma');
 
-        if ($request->user()?->role === 'listener') {
-            $listenerId = $request->user()->id;
+        $authUser = auth('sanctum')->user() ?? $request->user();
+        if ($authUser?->role === 'listener') {
+            $listenerId = $authUser->id;
             $query->withExists(['ratings as has_user_rated' => fn ($q) => $q->where('user_id', $listenerId)]);
         }
 
         if (! empty($validated['q'])) {
-            $term = $validated['q'];
-            $query->where(function ($subQuery) use ($term) {
+            $term = mb_strtolower(trim((string) $validated['q']));
+            $pattern = "%{$term}%";
+            $query->where(function ($subQuery) use ($pattern) {
                 $subQuery
-                    ->where('title', 'like', "%{$term}%")
-                    ->orWhereHas('artist', fn ($artistQuery) => $artistQuery->where('stage_name', 'like', "%{$term}%"))
-                    ->orWhereHas('artists', fn ($artistQuery) => $artistQuery->where('stage_name', 'like', "%{$term}%"))
-                    ->orWhereHas('genre', fn ($genreQuery) => $genreQuery->where('name', 'like', "%{$term}%"));
+                    ->whereRaw('LOWER(title) LIKE ?', [$pattern])
+                    ->orWhereHas('artist', function ($artistQuery) use ($pattern) {
+                        $artistQuery
+                            ->whereRaw('LOWER(stage_name) LIKE ?', [$pattern])
+                            ->orWhereHas('user', fn ($userQuery) => $userQuery->whereRaw('LOWER(name) LIKE ?', [$pattern]));
+                    })
+                    ->orWhereHas('artists', function ($artistQuery) use ($pattern) {
+                        $artistQuery
+                            ->whereRaw('LOWER(stage_name) LIKE ?', [$pattern])
+                            ->orWhereHas('user', fn ($userQuery) => $userQuery->whereRaw('LOWER(name) LIKE ?', [$pattern]));
+                    })
+                    ->orWhereHas('genre', fn ($genreQuery) => $genreQuery->whereRaw('LOWER(name) LIKE ?', [$pattern]));
             });
         }
 
@@ -91,14 +103,13 @@ class ReleaseController extends Controller
 
         $artist = $request->user()?->artist;
         if (! $artist && $request->user()?->role !== 'admin') {
-            return response()->json(['message' => 'Relizi var pievienot tikai makslinieks vai administrators.'], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Relīzi var pievienot tikai mākslinieks vai administrators.'], Response::HTTP_FORBIDDEN);
         }
 
         $artistIds = $this->resolveArtistIds($request, $artist?->id);
         $validated['artist_id'] = $artistIds[0] ?? $artist?->id ?? $request->integer('artist_id');
         $validated['custom_genre_name'] = isset($validated['custom_genre_name']) ? trim($validated['custom_genre_name']) : null;
-        // For pgsql + pooler setups, force boolean literal to avoid integer binding (1/0) mismatch.
-        $validated['is_published'] = $request->boolean('is_published') ? 'true' : 'false';
+        $validated['is_published'] = $this->normalizeBooleanForDatabase($request->boolean('is_published'));
 
         unset($validated['artist_ids']);
 
@@ -107,7 +118,7 @@ class ReleaseController extends Controller
             $this->syncReleaseArtists($release, $artistIds);
 
             return response()->json(
-                $release->fresh()->load(['artist', 'artists', 'genre'])->loadCount('ratings'),
+                $release->fresh()->load(['artist.user', 'artists.user', 'genre'])->loadCount('ratings'),
                 201
             );
         });
@@ -117,9 +128,13 @@ class ReleaseController extends Controller
     {
         $release->load([
             'artist.profile',
+            'artist.user',
             'artists.profile',
+            'artists.user',
             'genre',
             'stats',
+            'ratings' => fn ($q) => $q->latest(),
+            'ratings.user:id,name',
             'comments' => fn ($q) => $q->latest(),
             'comments.user:id,name',
         ])
@@ -129,7 +144,7 @@ class ReleaseController extends Controller
             ->loadAvg('ratings as avg_style_execution', 'style_execution')
             ->loadAvg('ratings as avg_individuality_charisma', 'individuality_charisma');
 
-        $user = request()->user();
+        $user = auth('sanctum')->user() ?? request()->user();
         if ($user?->role === 'listener') {
             $hasRated = ReleaseRating::where('release_id', $release->id)
                 ->where('user_id', $user->id)
@@ -148,7 +163,7 @@ class ReleaseController extends Controller
     public function update(Request $request, Release $release)
     {
         if (! $this->canManageRelease($request, $release)) {
-            return response()->json(['message' => 'Nav tiesibu rediget so relizi.'], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Nav tiesību rediģēt šo relīzi.'], Response::HTTP_FORBIDDEN);
         }
 
         $validated = $request->validate([
@@ -173,7 +188,7 @@ class ReleaseController extends Controller
             $validated['custom_genre_name'] = trim((string) $validated['custom_genre_name']) ?: null;
         }
         if (array_key_exists('is_published', $validated)) {
-            $validated['is_published'] = $request->boolean('is_published') ? 'true' : 'false';
+            $validated['is_published'] = $this->normalizeBooleanForDatabase($request->boolean('is_published'));
         }
         $artistIds = null;
         if ($request->has('artist_ids')) {
@@ -191,13 +206,13 @@ class ReleaseController extends Controller
             }
         });
 
-        return $release->fresh()->load(['artist', 'artists', 'genre']);
+        return $release->fresh()->load(['artist.user', 'artists.user', 'genre']);
     }
 
     public function destroy(Release $release)
     {
         if (! $this->canManageRelease(request(), $release)) {
-            return response()->json(['message' => 'Nav tiesibu dzest so relizi.'], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Nav tiesību dzēst šo relīzi.'], Response::HTTP_FORBIDDEN);
         }
 
         $release->delete();
@@ -269,14 +284,18 @@ class ReleaseController extends Controller
     {
         $user = $request->user();
         if (! $user || $user->role !== 'listener') {
-            return response()->json(['message' => 'Vertet var tikai klausitajs.'], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Vērtēt var tikai klausītājs.'], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($lockedResponse = $this->feedbackLockedResponse($release)) {
+            return $lockedResponse;
         }
 
         $alreadyRated = ReleaseRating::where('release_id', $release->id)
             ->where('user_id', $user->id)
             ->exists();
         if ($alreadyRated) {
-            return response()->json(['message' => 'Tu jau noverteji so relizi.'], Response::HTTP_CONFLICT);
+            return response()->json(['message' => 'Tu jau novērtēji šo relīzi.'], Response::HTTP_CONFLICT);
         }
 
         $validated = $request->validate([
@@ -299,7 +318,25 @@ class ReleaseController extends Controller
     {
         $user = $request->user();
         if (! $user || $user->role !== 'listener') {
-            return response()->json(['message' => 'Komentet var tikai klausitajs.'], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Komentēt var tikai klausītājs.'], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($lockedResponse = $this->feedbackLockedResponse($release)) {
+            return $lockedResponse;
+        }
+
+        $alreadyRated = ReleaseRating::where('release_id', $release->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if (! $alreadyRated) {
+            return response()->json(['message' => 'Vispirms jāatstāj novērtējums.'], Response::HTTP_CONFLICT);
+        }
+
+        $alreadyCommented = ReleaseComment::where('release_id', $release->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if ($alreadyCommented) {
+            return response()->json(['message' => 'Tu jau atstāji komentāru šim relīzam.'], Response::HTTP_CONFLICT);
         }
 
         $validated = $request->validate([
@@ -315,11 +352,30 @@ class ReleaseController extends Controller
         return response()->json($comment->load('user:id,name'), 201);
     }
 
+    public function destroyComment(Request $request, Release $release, ReleaseComment $comment)
+    {
+        if ($request->user()?->role !== 'admin') {
+            return response()->json(['message' => 'Pieeja tikai administratoram.'], Response::HTTP_FORBIDDEN);
+        }
+
+        if ((int) $comment->release_id !== (int) $release->id) {
+            return response()->json(['message' => 'Komentārs nav saistīts ar šo relīzi.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $comment->delete();
+
+        return response()->json([], 204);
+    }
+
     public function submitFeedback(Request $request, Release $release)
     {
         $user = $request->user();
         if (! $user || $user->role !== 'listener') {
-            return response()->json(['message' => 'Vertet un komentet var tikai klausitajs.'], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Vērtēt un komentēt var tikai klausītājs.'], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($lockedResponse = $this->feedbackLockedResponse($release)) {
+            return $lockedResponse;
         }
 
         $alreadyRated = ReleaseRating::where('release_id', $release->id)
@@ -329,7 +385,7 @@ class ReleaseController extends Controller
             ->where('user_id', $user->id)
             ->exists();
         if ($alreadyRated || $alreadyCommented) {
-            return response()->json(['message' => 'Tu jau atstaji novertejumu un/vai komentaru sim relizam.'], Response::HTTP_CONFLICT);
+            return response()->json(['message' => 'Tu jau atstāji novērtējumu un/vai komentāru šim relīzam.'], Response::HTTP_CONFLICT);
         }
 
         $validated = $request->validate([
@@ -357,14 +413,14 @@ class ReleaseController extends Controller
             ]);
         });
 
-        return response()->json(['message' => 'Novertejums un komentars saglabati.'], 201);
+        return response()->json(['message' => 'Novērtējums un komentārs saglabāts.'], 201);
     }
 
     public function uploadCover(Request $request)
     {
         $user = $request->user();
         if (! $user || ! in_array($user->role, ['artist', 'admin'], true)) {
-            return response()->json(['message' => 'Oblozku var augshupladet tikai makslinieks vai administrators.'], Response::HTTP_FORBIDDEN);
+            return response()->json(['message' => 'Obložku var augšupielādēt tikai mākslinieks vai administrators.'], Response::HTTP_FORBIDDEN);
         }
 
         $validated = $request->validate([
@@ -410,11 +466,17 @@ class ReleaseController extends Controller
 
         $artistId = $request->integer('artist_id');
         if ($artistId) {
+            if (! Artist::whereKey($artistId)->exists()) {
+                throw ValidationException::withMessages([
+                    'artist_id' => ['Norādītais mākslinieks neeksistē.'],
+                ]);
+            }
+
             return [$artistId];
         }
 
         throw ValidationException::withMessages([
-            'artist_ids' => ['Janonorada vismaz viens makslinieks.'],
+            'artist_ids' => ['Jānorāda vismaz viens mākslinieks.'],
         ]);
     }
 
@@ -425,11 +487,36 @@ class ReleaseController extends Controller
         $syncPayload = [];
         foreach ($artistIds as $index => $artistId) {
             $syncPayload[$artistId] = [
-                'is_primary' => $index === 0 ? 'true' : 'false',
+                'is_primary' => $this->normalizeBooleanForDatabase($index === 0),
                 'credit_order' => $index + 1,
             ];
         }
 
         $release->artists()->sync($syncPayload);
+    }
+
+    private function normalizeBooleanForDatabase(bool $value): bool|string
+    {
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            return $value ? 'true' : 'false';
+        }
+
+        return $value;
+    }
+
+    private function feedbackLockedResponse(Release $release): ?\Illuminate\Http\JsonResponse
+    {
+        if (! $release->release_date) {
+            return null;
+        }
+
+        $releaseDate = Carbon::parse($release->release_date)->startOfDay();
+        if ($releaseDate->greaterThan(Carbon::today())) {
+            return response()->json([
+                'message' => "Šo relīzi varēs novērtēt pēc iznākšanas datuma ({$releaseDate->toDateString()}).",
+            ], Response::HTTP_CONFLICT);
+        }
+
+        return null;
     }
 }

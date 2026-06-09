@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -22,6 +23,8 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
             'role' => ['required', 'in:artist,listener'],
             'stage_name' => ['nullable', 'string', 'min:2', 'max:120'],
+        ], [
+            'password.confirmed' => 'Ievadi vienadu paroli abos laukos.',
         ]);
 
         $user = User::create([
@@ -73,10 +76,59 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $status = PasswordBroker::sendResetLink(['email' => $validated['email']]);
+        $user = User::where('email', $validated['email'])->first();
+
+        // Local mode: avoid SMTP timeouts and generate token/reset URL directly.
+        if ($user && app()->environment('local')) {
+            $token = PasswordBroker::createToken($user);
+            $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://127.0.0.1:5173'), '/');
+            $resetUrl = $frontendUrl.'/reset-password?token='.$token.'&email='.urlencode($user->getEmailForPasswordReset());
+
+            Log::info('Password reset link generated (local mode).', [
+                'email' => $user->email,
+                'reset_url' => $resetUrl,
+            ]);
+
+            return response()->json(['message' => 'Paroles atiestatīšanas saite sagatavota lokāli (skat. servera logu).']);
+        }
+
+        try {
+            $status = PasswordBroker::sendResetLink(['email' => $validated['email']]);
+        } catch (\Throwable $exception) {
+            Log::error('Failed to send password reset link.', [
+                'email' => $validated['email'],
+                'error' => $exception->getMessage(),
+            ]);
+
+            // Local fallback: if SMTP fails, still generate a usable reset URL.
+            if (app()->environment('local')) {
+                if ($user) {
+                    $token = PasswordBroker::createToken($user);
+                    $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://127.0.0.1:5173'), '/');
+                    $resetUrl = $frontendUrl.'/reset-password?token='.$token.'&email='.urlencode($user->getEmailForPasswordReset());
+
+                    Log::info('Password reset link generated after SMTP failure (local fallback).', [
+                        'email' => $user->email,
+                        'reset_url' => $resetUrl,
+                    ]);
+                }
+
+                return response()->json([
+                    'message' => 'E-pasta nosūtīšana neizdevās, bet lokālā atiestatīšanas saite ir sagatavota (skat. servera logu).',
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Neizdevās nosūtīt saiti. Pārbaudi e-pasta iestatījumus servera pusē.',
+            ], 503);
+        }
 
         if ($status === PasswordBroker::RESET_LINK_SENT) {
             return response()->json(['message' => 'Paroles atjaunosanas saite nosutita uz e-pastu.']);
+        }
+
+        if ($status === PasswordBroker::RESET_THROTTLED) {
+            return response()->json(['message' => 'Saite nesen jau tika pieprasīta. Mēģini vēlreiz pēc minūtes.'], 429);
         }
 
         // Do not disclose whether e-mail exists in system.
@@ -89,6 +141,8 @@ class AuthController extends Controller
             'token' => ['required', 'string'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+        ], [
+            'password.confirmed' => 'Ievadi vienadu paroli abos laukos.',
         ]);
 
         $status = PasswordBroker::reset(
@@ -107,7 +161,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Parole veiksmigi atjaunota.']);
         }
 
-        return response()->json(['message' => 'Neizdevas atjaunot paroli.'], 422);
+        return response()->json(['message' => 'Neizdevās atjaunot paroli.'], 422);
     }
 
     public function me(Request $request)

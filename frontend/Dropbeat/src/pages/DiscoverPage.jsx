@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { Link } from "react-router-dom";
+import { ArtistIdentity } from "../components/ArtistIdentity";
 
 export function DiscoverPage({ t = (key, fallback) => fallback }) {
   const [rows, setRows] = useState([]);
@@ -22,22 +23,22 @@ export function DiscoverPage({ t = (key, fallback) => fallback }) {
 
   return (
     <section className="panel">
-      <h2>{t("pages.discover.title", "Discover")}</h2>
-      <p className="muted">{t("pages.discover.subtitle", "Atlasito relizu izlase klausitajiem un A&R komandai.")}</p>
+      <h2>{t("pages.discover.title", "Atklājumi")}</h2>
+      <p className="muted">{t("pages.discover.subtitle", "Atlasīto relīžu izlase klausītājiem un A&R komandai.")}</p>
       <div className="release-grid">
         {rows.map((item) => (
           <article className="card" key={item.id}>
             {item.cover_url && <img className="cover-image" src={item.cover_url} alt={item.title} />}
             <p className="tag">{item.type}</p>
             <h3>{item.title}</h3>
-            <Link to={`/releases/${item.id}`}>{t("pages.discover.details", "Skatit detalas")}</Link>
+            <Link to={`/releases/${item.id}`}>{t("pages.discover.details", "Skatīt detaļas")}</Link>
             <p>
               {item.artist?.id ? (
                 <Link to={`/artists/${item.artist.id}`} className="discover-artist-link">
-                  {item.artist?.stage_name}
+                  <ArtistIdentity artist={item.artist} unknown="Nezināms mākslinieks" />
                 </Link>
               ) : (
-                item.artist?.stage_name
+                <ArtistIdentity artist={item.artist} unknown="Nezināms mākslinieks" />
               )}
             </p>
             <small>{item.genre?.name} | {item.release_date} | {formatDuration(item.duration_seconds)}</small>

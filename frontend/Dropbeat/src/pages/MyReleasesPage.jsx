@@ -16,16 +16,16 @@ export function MyReleasesPage({ user, t = (key, fallback) => fallback }) {
     api.get("/me/artist-profile")
       .then(({ data: artist }) => api.get("/releases", { params: { artist_id: artist.id, sort_by: "release_date", sort_dir: "desc" } }))
       .then(({ data }) => setRows(data.data ?? []))
-      .catch(() => setError(t("pages.myReleases.loadError", "Neizdevas ieladet tavas relizes.")));
+      .catch(() => setError(t("pages.myReleases.loadError", "Neizdevās ielādēt tavas relīzes.")));
   }, [user]);
 
   if (user?.role !== "artist") {
-    return <section className="panel"><h2>{t("pages.myReleases.title", "My Releases")}</h2><p>{t("pages.myReleases.onlyArtists", "Tikai maksliniekiem.")}</p></section>;
+    return <section className="panel"><h2>{t("pages.myReleases.title", "Manas relīzes")}</h2><p>{t("pages.myReleases.onlyArtists", "Tikai māksliniekiem.")}</p></section>;
   }
 
   return (
     <section className="panel">
-      <h2>{t("pages.myReleases.title", "My Releases")}</h2>
+      <h2>{t("pages.myReleases.title", "Manas relīzes")}</h2>
       {error && <p className="error">{error}</p>}
       <div className="release-grid">
         {rows.map((item) => (

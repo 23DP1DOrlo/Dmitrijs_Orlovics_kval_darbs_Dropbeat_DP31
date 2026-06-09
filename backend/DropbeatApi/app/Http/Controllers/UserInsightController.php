@@ -15,14 +15,17 @@ class UserInsightController extends Controller
             'query' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $query = $validated['query'] ?? '';
+        $query = mb_strtolower(trim((string) ($validated['query'] ?? '')));
+        $pattern = "%{$query}%";
 
         $users = User::query()
-            ->where(function ($inner) use ($query) {
+            ->where(function ($inner) use ($pattern) {
                 $inner
-                    ->where('name', 'like', "%{$query}%")
-                    ->orWhereHas('artist', function ($artistQuery) use ($query) {
-                        $artistQuery->where('stage_name', 'like', "%{$query}%");
+                    ->whereRaw('LOWER(name) LIKE ?', [$pattern])
+                    ->orWhereHas('artist', function ($artistQuery) use ($pattern) {
+                        $artistQuery
+                            ->whereRaw('LOWER(stage_name) LIKE ?', [$pattern])
+                            ->orWhereHas('user', fn ($userQuery) => $userQuery->whereRaw('LOWER(name) LIKE ?', [$pattern]));
                     });
             })
             ->with('artist:id,user_id,stage_name')

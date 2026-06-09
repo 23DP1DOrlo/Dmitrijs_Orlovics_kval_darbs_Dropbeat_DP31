@@ -47,11 +47,11 @@ export function ArtistDropPage({ user }) {
   useEffect(() => {
     api.get("/genres")
       .then(({ data }) => setGenres(data))
-      .catch(() => setError("Neizdevas ieladet zanrus."));
+      .catch(() => setError("Neizdevās ielādēt žanrus."));
 
     api.get("/artists")
       .then(({ data }) => setArtists(data))
-      .catch(() => setError("Neizdevas ieladet maksliniekus."));
+      .catch(() => setError("Neizdevās ielādēt māksliniekus."));
   }, []);
 
   useEffect(() => {
@@ -80,9 +80,9 @@ export function ArtistDropPage({ user }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setForm((prev) => ({ ...prev, cover_url: data.cover_url }));
-      window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Oblozka augshupieladeta" } }));
+      window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Obložka augšupielādēta" } }));
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas augshupieladet oblozku.");
+      setError(requestError?.response?.data?.message ?? "Neizdevās augšupielādēt obložku.");
     } finally {
       setUploadingCover(false);
     }
@@ -101,6 +101,13 @@ export function ArtistDropPage({ user }) {
     setError("");
     setMessage("");
     setSubmitting(true);
+
+    if (uploadingCover) {
+      setError("Pagaidi, kamēr obložka tiek augšupielādēta.");
+      setSubmitting(false);
+      return;
+    }
+
     const hours = form.type === "single" ? 0 : Number(duration.hours || 0);
     const minutes = Number(duration.minutes || 0);
     const seconds = Number(duration.seconds || 0);
@@ -110,6 +117,7 @@ export function ArtistDropPage({ user }) {
       ...form,
       genre_id: Number(form.genre_id),
       custom_genre_name: form.custom_genre_name?.trim() ? form.custom_genre_name.trim() : null,
+      cover_url: form.cover_url?.trim() || "",
       duration_seconds: totalDuration > 0 ? totalDuration : null,
       is_published: true,
       artist_ids: collaboratorIds,
@@ -117,34 +125,41 @@ export function ArtistDropPage({ user }) {
 
     try {
       if (!payload.genre_id) {
-        setError("Izvelies zanru.");
+        setError("Izvēlies žanru.");
         return;
       }
       if (isOtherGenreSelected && !payload.custom_genre_name) {
-        setError("Ja izvelies Other, ieraksti savu zanru.");
+        setError("Ja izvēlies Other, ieraksti savu žanru.");
         return;
       }
       if (!payload.artist_ids.length) {
-        setError("Pievieno vismaz vienu makslinieku relizei.");
+        setError("Pievieno vismaz vienu mākslinieku relīzei.");
+        return;
+      }
+      if (!payload.cover_url) {
+        setError("Pievieno obložku: augšupielādē failu vai ievadi URL.");
         return;
       }
 
       await api.post("/releases", payload);
-      setMessage("Relize veiksmigi pievienota.");
+      setMessage("Relīze veiksmīgi pievienota.");
       setForm(emptyForm);
       setSelectedArtistId("");
       const currentArtist = artists.find((artist) => artist.user_id === user?.id);
       setCollaboratorIds(currentArtist ? [currentArtist.id] : []);
       setDuration(emptyDuration);
       setSelectedCoverPreview("");
-      window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Relize pievienota" } }));
+      window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Relīze pievienota" } }));
     } catch (requestError) {
       const validationErrors = requestError?.response?.data?.errors;
+      const backendError = requestError?.response?.data?.error;
       if (validationErrors) {
         const firstError = Object.values(validationErrors)[0]?.[0];
-        setError(firstError ?? "Neizdevas saglabat relizi.");
+        setError(firstError ?? "Neizdevās saglabāt relīzi.");
+      } else if (backendError) {
+        setError(`Neizdevās saglabāt relīzi: ${backendError}`);
       } else {
-        setError(requestError?.response?.data?.message ?? "Neizdevas saglabat relizi.");
+        setError(requestError?.response?.data?.message ?? "Neizdevās saglabāt relīzi.");
       }
     } finally {
       setSubmitting(false);
@@ -163,7 +178,7 @@ export function ArtistDropPage({ user }) {
   return (
     <section className="panel">
       <h2>Drop Release</h2>
-      <p className="muted">Atseviska studijas lapa jaunam relizam - no idejas lidz publicesanai.</p>
+      <p className="muted">Atsevišķa studijas lapa jaunai relīzei — no idejas līdz publicēšanai.</p>
       {message && <p className="ok">{message}</p>}
       {error && <p className="error">{error}</p>}
 
@@ -171,20 +186,20 @@ export function ArtistDropPage({ user }) {
         <input placeholder="Nosaukums" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} required />
         <input type="date" value={form.release_date} onChange={(e) => setForm((p) => ({ ...p, release_date: e.target.value }))} required />
         <select value={form.genre_id} onChange={(e) => setForm((p) => ({ ...p, genre_id: e.target.value }))} required>
-          <option value="">Izveleties zanru</option>
+          <option value="">Izvēlēties žanru</option>
           {genres.map((genre) => (
             <option key={genre.id} value={genre.id}>{genre.name}</option>
           ))}
         </select>
         <div className="collaborator-picker">
-          <label htmlFor="artist-collab-select">Kopdarba makslinieki (lidz 7)</label>
+          <label htmlFor="artist-collab-select">Kopdarba mākslinieki (līdz 7)</label>
           <div className="collaborator-picker-row">
             <select
               id="artist-collab-select"
               value={selectedArtistId}
               onChange={(e) => setSelectedArtistId(e.target.value)}
             >
-              <option value="">Izvelies makslinieku</option>
+              <option value="">Izvēlies mākslinieku</option>
               {artists
                 .filter((artist) => !collaboratorIds.includes(artist.id))
                 .map((artist) => (
@@ -227,7 +242,7 @@ export function ArtistDropPage({ user }) {
         </div>
         {isOtherGenreSelected && (
           <input
-            placeholder="Ieraksti savu zanru"
+            placeholder="Ieraksti savu žanru"
             value={form.custom_genre_name}
             onChange={(e) => setForm((p) => ({ ...p, custom_genre_name: e.target.value }))}
             required
@@ -235,17 +250,17 @@ export function ArtistDropPage({ user }) {
         )}
 
         <select value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
-          <option value="single">Single</option>
+          <option value="single">Singls</option>
           <option value="ep">EP</option>
-          <option value="album">Album</option>
+          <option value="album">Albums</option>
         </select>
         <input
-          placeholder="Oblozkas URL"
+          placeholder="Obložkas URL"
           value={form.cover_url}
           onChange={(e) => setForm((p) => ({ ...p, cover_url: e.target.value }))}
-          required
         />
         <input type="file" accept="image/*" onChange={(e) => uploadCoverFile(e.target.files?.[0])} />
+        <p className="small-text">Ja izvēlies failu no datora, URL aizpildīsies automātiski.</p>
 
         {uploadingCover && <p className="small-text">Augshupielade...</p>}
         {(selectedCoverPreview || form.cover_url) && (
@@ -285,15 +300,15 @@ export function ArtistDropPage({ user }) {
           />
         </div>
         <textarea
-          placeholder="Relizes apraksts"
+          placeholder="Relīzes apraksts"
           value={form.description}
           onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
           rows={3}
         />
-        <button type="submit" disabled={submitting}>Drop release</button>
+        <button type="submit" disabled={submitting || uploadingCover}>Drop release</button>
       </form>
 
-      <p className="small-text">Pec publicesanas relize paradisies kataloga. <Link to="/">Atvert katalogu</Link></p>
+      <p className="small-text">Pēc publicēšanas relīze parādīsies katalogā. <Link to="/">Atvērt katalogu</Link></p>
     </section>
   );
 }

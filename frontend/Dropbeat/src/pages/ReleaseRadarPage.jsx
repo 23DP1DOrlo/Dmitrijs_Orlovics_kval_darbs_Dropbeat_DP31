@@ -17,8 +17,8 @@ export function ReleaseRadarPage() {
 
   return (
     <section className="panel">
-      <h2>Release Radar</h2>
-      <p className="muted">Tendenču panelis ar realu zanru aktivitati no datubazes.</p>
+      <h2>Relīžu radars</h2>
+      <p className="muted">Tendenču panelis ar reālu žanru aktivitāti no datubāzes.</p>
       <div className="comment-list">
         {radarData.map((row) => (
           <article className="card" key={row.genre}>
@@ -26,10 +26,10 @@ export function ReleaseRadarPage() {
             <div className="progress-shell">
               <div className="progress-fill" style={{ width: `${(Number(row.total_streams ?? 0) / max) * 100}%` }} />
             </div>
-            <small>{Number(row.total_streams ?? 0)} streams • {Number(row.release_count ?? 0)} relizes</small>
+            <small>{Number(row.total_streams ?? 0)} streams • {Number(row.release_count ?? 0)} relīzes</small>
           </article>
         ))}
-        {!radarData.length && <p className="muted">Nav datu radar panelim.</p>}
+        {!radarData.length && <p className="muted">Nav datu radara panelim.</p>}
       </div>
     </section>
   );

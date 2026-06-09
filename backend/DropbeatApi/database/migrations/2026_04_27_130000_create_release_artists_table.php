@@ -34,7 +34,7 @@ return new class extends Migration
                     $rows[] = [
                         'release_id' => $release->id,
                         'artist_id' => $release->artist_id,
-                        'is_primary' => 'true',
+                        'is_primary' => true,
                         'credit_order' => 1,
                         'created_at' => $release->created_at,
                         'updated_at' => $release->updated_at,

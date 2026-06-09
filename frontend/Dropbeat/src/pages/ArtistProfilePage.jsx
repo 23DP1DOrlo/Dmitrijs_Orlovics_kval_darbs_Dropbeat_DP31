@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { CoverImage } from "../components/CoverImage";
+import { ArtistIdentity } from "../components/ArtistIdentity";
 
 const normalizeCoverUrl = (value) => {
   if (!value) return value;
@@ -38,7 +39,7 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
     setPayload(null);
     const id = String(artistId ?? "").trim();
     if (!/^\d+$/.test(id)) {
-      setError(t("pages.artist.invalidId", "Nederigs artista ID."));
+      setError(t("pages.artist.invalidId", "Nederīgs mākslinieka ID."));
       return () => {
         cancelled = true;
       };
@@ -53,7 +54,7 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
         if (cancelled) return;
         const apiMsg = err?.response?.data?.message;
         const detail = typeof apiMsg === "string" ? apiMsg : null;
-        setError(detail || t("pages.artist.loadError", "Neizdevas ieladet artista profilu."));
+        setError(detail || t("pages.artist.loadError", "Neizdevās ielādēt mākslinieka profilu."));
       });
     return () => {
       cancelled = true;
@@ -65,7 +66,7 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
       <section className="panel artist-profile-page">
         <p className="error">{error}</p>
         <button type="button" className="ghost-btn" onClick={() => navigate(-1)}>
-          {t("pages.artist.back", "Atpakal")}
+          {t("pages.artist.back", "Atpakaļ")}
         </button>
       </section>
     );
@@ -74,12 +75,12 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
   if (!payload) {
     return (
       <section className="panel artist-profile-page">
-        <p className="muted">{t("pages.artist.loading", "Ielade...")}</p>
+        <p className="muted">{t("pages.artist.loading", "Ielāde...")}</p>
       </section>
     );
   }
 
-  const { stage_name: stageName, country, is_verified: isVerified, profile, releases, stats } = payload;
+  const { stage_name: stageName, full_name: fullName, country, is_verified: isVerified, profile, releases, stats } = payload;
   const initial = (stageName || "?").trim().charAt(0).toUpperCase() || "?";
   const avatarUrl = normalizeCoverUrl(profile?.avatar_url);
   const avgAll = stats?.average_composite_score;
@@ -94,7 +95,7 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
   return (
     <section className="panel artist-profile-page">
       <button type="button" className="ghost-btn artist-profile-back" onClick={() => navigate(-1)}>
-        {t("pages.artist.back", "Atpakal")}
+        {t("pages.artist.back", "Atpakaļ")}
       </button>
 
       <header className="artist-profile-hero">
@@ -104,11 +105,11 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
           ) : (
             <span className="artist-profile-avatar-letter">{initial}</span>
           )}
-          {isVerified && <span className="artist-profile-verified" title={t("pages.artist.verified", "Verificets")}>✓</span>}
+          {isVerified && <span className="artist-profile-verified" title={t("pages.artist.verified", "Verificēts")}>✓</span>}
         </div>
         <div className="artist-profile-intro">
-          <p className="tag artist-profile-tag">{t("pages.artist.badge", "Makslinieks")}</p>
-          <h1 className="artist-profile-name">{stageName}</h1>
+          <p className="tag artist-profile-tag">{t("pages.artist.badge", "Mākslinieks")}</p>
+          <h1 className="artist-profile-name"><ArtistIdentity artist={{ stage_name: stageName, user: { name: fullName } }} unknown={stageName || "Nezināms mākslinieks"} /></h1>
           <div className="artist-profile-meta-row">
             {country && (
               <span className="artist-profile-chip">{country}</span>
@@ -137,30 +138,30 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
         <aside className="artist-profile-stats" aria-label={t("pages.artist.statsAria", "Statistika")}>
           <div className="artist-profile-stat-card">
             <span className="artist-profile-stat-value">{stats?.published_releases_count ?? 0}</span>
-            <span className="artist-profile-stat-label">{t("pages.artist.releasesCount", "Publiskas relizes")}</span>
+            <span className="artist-profile-stat-label">{t("pages.artist.releasesCount", "Publiskās relīzes")}</span>
           </div>
           <div className="artist-profile-stat-card artist-profile-stat-highlight">
             <span className="artist-profile-stat-value">
               {hasAvg ? Number(avgAll).toFixed(1) : "—"}
             </span>
-            <span className="artist-profile-stat-label">{t("pages.artist.avgScore", "Videja novertejuma videja")}</span>
+            <span className="artist-profile-stat-label">{t("pages.artist.avgScore", "Vidējais novērtējums")}</span>
             <span className="artist-profile-stat-hint">
               {hasAvg
-                ? t("pages.artist.avgHint", "No relizem ar novertejumiem: {n}").replace("{n}", String(stats.rated_releases_count))
-                : t("pages.artist.noRatingsYet", "Vel nav apkopojamu novertejumu")}
+                ? t("pages.artist.avgHint", "No relīzēm ar novērtējumiem: {n}").replace("{n}", String(stats.rated_releases_count))
+                : t("pages.artist.noRatingsYet", "Vēl nav apkopojamu novērtējumu")}
             </span>
           </div>
         </aside>
       </header>
 
-      <h2 className="artist-profile-section-title">{t("pages.artist.discography", "Diskografija")}</h2>
+      <h2 className="artist-profile-section-title">{t("pages.artist.discography", "Diskogrāfija")}</h2>
       {allReleases.length === 0 ? (
-        <p className="muted">{t("pages.artist.noReleases", "Sis makslinieks vel nav publicojis relizu.")}</p>
+        <p className="muted">{t("pages.artist.noReleases", "Šis mākslinieks vēl nav publicējis relīzes.")}</p>
       ) : (
         <>
           <h3>{t("pages.artist.singles", "Singli")}</h3>
           {singleReleases.length === 0 ? (
-            <p className="muted">{t("pages.artist.noSingles", "Nav publicetu singlu.")}</p>
+            <p className="muted">{t("pages.artist.noSingles", "Nav publicētu singlu.")}</p>
           ) : (
             <ul className="artist-release-grid">
               {singleReleases.map((item) => {
@@ -198,7 +199,7 @@ export function ArtistProfilePage({ t = (key, fallback) => fallback }) {
 
           <h3>{t("pages.artist.albumsEp", "Albumi / EP")}</h3>
           {albumEpReleases.length === 0 ? (
-            <p className="muted">{t("pages.artist.noAlbumsEp", "Nav publicetu albumu vai EP.")}</p>
+            <p className="muted">{t("pages.artist.noAlbumsEp", "Nav publicētu albumu vai EP.")}</p>
           ) : (
             <ul className="artist-release-grid">
               {albumEpReleases.map((item) => {

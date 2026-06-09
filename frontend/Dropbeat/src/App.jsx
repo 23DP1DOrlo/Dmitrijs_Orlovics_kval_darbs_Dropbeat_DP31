@@ -3,6 +3,8 @@ import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { CoverImage } from "./components/CoverImage";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ArtistIdentity } from "./components/ArtistIdentity";
 import { AuthPage } from "./pages/AuthPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
 import { ArtistDropPage } from "./pages/ArtistDropPage";
@@ -69,161 +71,161 @@ const translations = {
   lv: {
     common: {
       guest: "viesis",
-      unknownArtist: "Unknown artist",
+      unknownArtist: "Nezināms mākslinieks",
       textMetric: "Teksts",
       rhythmMetric: "Ritmika",
       styleMetric: "Stils",
-      individualityMetric: "Individualitate",
+      individualityMetric: "Individualitāte",
     },
     nav: {
-      dashboard: "Galvena",
+      dashboard: "Galvenā",
       about: "Par mums",
-      discover: "Discover",
-      leaderboard: "Leaderboard",
-      releases: "Relizes",
-      myReleases: "My Releases",
-      studio: "Studio",
-      users: "User Insights",
-      admin: "Admin Users",
+      discover: "Atklājumi",
+      leaderboard: "Reitings",
+      releases: "Relīzes",
+      myReleases: "Manas relīzes",
+      studio: "Studija",
+      users: "Lietotāju ieskati",
+      admin: "Admin lietotāji",
     },
     pages: {
       about: {
         title: "Par mums",
-        subtitle: "Seit vari ielikt savu tekstu par projektu, komandu un platformas merkjiem.",
+        subtitle: "Šeit vari ielikt savu tekstu par projektu, komandu un platformas mērķiem.",
       },
       discover: {
-        title: "Discover",
-        subtitle: "Atlasito relizu izlase klausitajiem un A&R komandai.",
-        details: "Skatit detalas",
+        title: "Atklājumi",
+        subtitle: "Atlasīto relīžu izlase klausītājiem un A&R komandai.",
+        details: "Skatīt detaļas",
       },
       liveFeed: {
-        title: "Live Feed",
-        subtitle: "Jaunakas aktivitates platforma.",
-        published: "Publicets",
+        title: "Aktivitāšu plūsma",
+        subtitle: "Jaunākās aktivitātes platformā.",
+        published: "Publicēts",
       },
       dashboard: {
-        title: "Dashboard",
+        title: "Panelis",
         welcome: "Sveiks",
-        subtitle: "Seit ir projekta galvena atskaite.",
+        subtitle: "Šeit ir projekta galvenais pārskats.",
         kpiReleases: "Kopējais relīžu skaits",
-        kpiUsers: "Lietotaji platforma",
-        kpiComments: "Komentari",
-        kpiRatings: "Novertejumi",
-        loading: "Ieladejam realo statistiku no datubazes...",
-        loadError: "Neizdevas ieladet statistiku no datubazes.",
-        upcoming: "Upcoming Releases",
-        noUpcoming: "Pagaidam nav relizu ar nakotnes datumu.",
+        kpiUsers: "Lietotāji platformā",
+        kpiComments: "Komentāri",
+        kpiRatings: "Novērtējumi",
+        loading: "Ielādējam reālo statistiku no datubāzes...",
+        loadError: "Neizdevās ielādēt statistiku no datubāzes.",
+        upcoming: "Gaidāmās relīzes",
+        noUpcoming: "Pagaidām nav relīžu ar nākotnes datumu.",
         latest: "Jaunākās relīzes",
       },
       leaderboard: {
-        title: "Leaderboard",
-        subtitle: "Top relizes pec auditorijas novertejuma.",
-        thisMonth: "Sis menesis",
-        lastMonth: "Ieprieksejais menesis",
-        last3Months: "Pedejie 3 menesi",
+        title: "Reitings",
+        subtitle: "Top relīzes pēc auditorijas novērtējuma.",
+        thisMonth: "Šis mēnesis",
+        lastMonth: "Iepriekšējais mēnesis",
+        last3Months: "Pēdējie 3 mēneši",
         allTime: "Visu laiku",
-        byScore: "Pec score",
-        byVotes: "Pec vote skaita",
-        byFresh: "Pec svaiguma",
-        loading: "Ieladejam top relizes...",
-        singles: "Singles Leaderboard",
-        albums: "Albums Leaderboard",
-        votes: "Votes",
-        noSingles: "Nav single datu saja perioda.",
-        noAlbums: "Nav album datu saja perioda.",
-        noData: "Saja perioda nav datu leaderboardam.",
-        loadError: "Neizdevas ieladet leaderboard.",
+        byScore: "Pēc score",
+        byVotes: "Pēc balsu skaita",
+        byFresh: "Pēc svaiguma",
+        loading: "Ielādējam top relīzes...",
+        singles: "Singlu tops",
+        albums: "Albumu tops",
+        votes: "Balsis",
+        noSingles: "Nav singlu datu šajā periodā.",
+        noAlbums: "Nav albumu datu šajā periodā.",
+        noData: "Šajā periodā nav datu reitingam.",
+        loadError: "Neizdevās ielādēt reitingu.",
       },
       myReleases: {
-        title: "My Releases",
-        onlyArtists: "Tikai maksliniekiem.",
-        loadError: "Neizdevas ieladet tavas relizes.",
+        title: "Manas relīzes",
+        onlyArtists: "Tikai māksliniekiem.",
+        loadError: "Neizdevās ielādēt tavas relīzes.",
       },
       studio: {
-        title: "Studio",
-        onlyArtists: "Tikai maksliniekiem.",
-        artistTitle: "Artist Studio",
+        title: "Studija",
+        onlyArtists: "Tikai māksliniekiem.",
+        artistTitle: "Mākslinieka studija",
         subtitle: "Produkcijas darba panelis, kas atdarina lielu platformu.",
-        roadmap: "Roadmap",
-        roadmapText: "Upload audio failiem un cover menedzments.",
-        campaigns: "Campaigns",
-        campaignsText: "Relizu promo kampanas un statistikas salidzinajums.",
-        distribution: "Distribution",
-        distributionText: "Eksports uz Spotify/Apple Music metadatu schema.",
+        roadmap: "Plāns",
+        roadmapText: "Audio failu augšupielāde un vāku pārvaldība.",
+        campaigns: "Kampaņas",
+        campaignsText: "Relīžu promo kampaņas un statistikas salīdzinājums.",
+        distribution: "Izplatīšana",
+        distributionText: "Metadatu eksports uz Spotify/Apple Music shēmu.",
       },
       artist: {
-        loading: "Ielade...",
-        loadError: "Neizdevas ieladet artista profilu.",
-        invalidId: "Nederigs artista ID.",
-        back: "Atpakal",
-        badge: "Makslinieks",
-        verified: "Verificets",
+        loading: "Ielāde...",
+        loadError: "Neizdevās ielādēt mākslinieka profilu.",
+        invalidId: "Nederīgs mākslinieka ID.",
+        back: "Atpakaļ",
+        badge: "Mākslinieks",
+        verified: "Verificēts",
         statsAria: "Statistika",
-        releasesCount: "Publiskas relizes",
-        avgScore: "Videja novertejuma videja",
-        avgHint: "No relizem ar novertejumiem: {n}",
-        noRatingsYet: "Vel nav apkopojamu novertejumu",
-        discography: "Diskografija",
-        noReleases: "Sis makslinieks vel nav publicojis relizu.",
+        releasesCount: "Publiskās relīzes",
+        avgScore: "Vidējais novērtējums",
+        avgHint: "No relīzēm ar novērtējumiem: {n}",
+        noRatingsYet: "Vēl nav apkopotu novērtējumu",
+        discography: "Diskogrāfija",
+        noReleases: "Šis mākslinieks vēl nav publicējis relīzes.",
         noVotes: "Nav balsu",
       },
     },
     header: {
-      title: "Muzikas relizu platforma",
-      subtitle: "Publice, parvaldi un analize relizes vienota profesionala paneli.",
-      menu: "Menu",
+      title: "Mūzikas relīžu platforma",
+      subtitle: "Publicē, pārvaldi un analizē relīzes vienotā profesionālā panelī.",
+      menu: "Izvēlne",
       profile: "Profils",
-      dropRelease: "Drop Release",
-      login: "Ienakt",
-      register: "Registracija",
+      dropRelease: "Jauna relīze",
+      login: "Ienākt",
+      register: "Reģistrācija",
       logout: "Iziet",
-      light: "Light",
-      dark: "Dark",
-      searchPlaceholder: "Meklet artistu vai relizi...",
-      searchLoading: "Mekleju...",
+      light: "Gaišā",
+      dark: "Tumšā",
+      searchPlaceholder: "Meklēt mākslinieku vai relīzi...",
+      searchLoading: "Meklēju...",
       searchEmpty: "Nekas nav atrasts",
-      searchArtists: "Artists",
-      searchTracks: "Tracks",
+      searchArtists: "Mākslinieki",
+      searchTracks: "Relīzes",
     },
     auth: {
-      accessTag: "DropBeat Access",
-      heroTitle: "Release platforma jaunam limenim",
-      heroSubtitle: "Publice relizes, sadarbojies ar citiem artistiem un redzi realu statistiku viena moderna paneli.",
-      loginTitle: "Pieslegsanas",
-      registerTitle: "Registracija",
-      loginSubtitle: "Ienac sava konta un turpini darbu ar relizem.",
-      registerSubtitle: "Izveido jaunu kontu un izvelies savu lomu platforma.",
-      name: "Vards",
-      stageName: "Skatuves vards",
-      artistRole: "Makslinieks",
-      listenerRole: "Klausitajs",
-      roleHint: "Izvelies lomu: artist vai listener.",
+      accessTag: "DropBeat piekļuve",
+      heroTitle: "Relīžu platforma jaunā līmenī",
+      heroSubtitle: "Publicē relīzes, sadarbojies ar citiem māksliniekiem un redzi reālu statistiku vienā modernā panelī.",
+      loginTitle: "Pieslēgšanās",
+      registerTitle: "Reģistrācija",
+      loginSubtitle: "Ienāc savā kontā un turpini darbu ar relīzēm.",
+      registerSubtitle: "Izveido jaunu kontu un izvēlies savu lomu platformā.",
+      name: "Vārds",
+      stageName: "Skatuves vārds",
+      artistRole: "Mākslinieks",
+      listenerRole: "Klausītājs",
+      roleHint: "Izvēlies lomu: mākslinieks vai klausītājs.",
       email: "E-pasts",
       password: "Parole",
-      repeatPassword: "Atkartot paroli",
-      signIn: "Ienakt",
+      repeatPassword: "Atkārtot paroli",
+      signIn: "Ienākt",
       createAccount: "Izveidot kontu",
       forgotPassword: "Aizmirsu paroli",
-      noAccount: "Nav konta? Registreties",
-      haveAccount: "Jau ir konts? Pieslegties",
-      security: "Security",
-      forgotTitle: "Paroles atjaunosana",
-      forgotSubtitle: "Ievadi e-pastu, un mes nosutisim paroles atjaunosanas saiti.",
-      sendLink: "Nosutit saiti",
-      resetTitle: "Paroles atjaunosana",
-      invalidResetLink: "Nederiga atjaunosanas saite. Pieprasi jaunu saiti velreiz.",
-      setNewPassword: "Iestati jaunu paroli",
+      noAccount: "Nav konta? Reģistrēties",
+      haveAccount: "Jau ir konts? Pieslēgties",
+      security: "Drošība",
+      forgotTitle: "Paroles atjaunošana",
+      forgotSubtitle: "Ievadi e-pastu, un mēs nosūtīsim paroles atjaunošanas saiti.",
+      sendLink: "Nosūtīt saiti",
+      resetTitle: "Paroles atjaunošana",
+      invalidResetLink: "Nederīga atjaunošanas saite. Pieprasi jaunu saiti vēlreiz.",
+      setNewPassword: "Iestatīt jaunu paroli",
       newPassword: "Jauna parole",
-      repeatNewPassword: "Atkartot jauno paroli",
-      saving: "Saglabaju...",
-      savePassword: "Saglabat paroli",
+      repeatNewPassword: "Atkārtot jauno paroli",
+      saving: "Saglabāju...",
+      savePassword: "Saglabāt paroli",
     },
     misc: {
-      unknownArtist: "Unknown artist",
-      latestDrops: "Latest Drops",
-      liveWave: "Live Wave",
-      closeMenu: "Aizvert izvelni",
-      openMenu: "Atvert izvelni",
+      unknownArtist: "Nezināms mākslinieks",
+      latestDrops: "Jaunākās relīzes",
+      liveWave: "Tiešraides vilnis",
+      closeMenu: "Aizvērt izvēlni",
+      openMenu: "Atvērt izvēlni",
     },
   },
   ru: {
@@ -552,6 +554,8 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthLayout = ["/auth", "/forgot-password", "/reset-password"].includes(location.pathname);
+  const authRedirectParam = new URLSearchParams(location.search).get("redirect") ?? "";
+  const safeAuthRedirect = authRedirectParam.startsWith("/") ? authRedirectParam : "/dashboard";
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem("dropbeat_token");
     const raw = localStorage.getItem("dropbeat_user");
@@ -610,7 +614,8 @@ function App() {
     localStorage.removeItem("dropbeat_token");
     localStorage.removeItem("dropbeat_user");
     setUser(null);
-    window.dispatchEvent(new CustomEvent("dropbeat:toast", { detail: { type: "success", message: "Tu veiksmigi izgaji no konta" } }));
+    // Force full app reset after logout to avoid stale SPA state.
+    window.location.replace("/auth");
   };
 
   useEffect(() => {
@@ -758,15 +763,6 @@ function App() {
   }, [mobileMenuOpen]);
 
   useEffect(() => {
-    if (!feedReleaseModal) return;
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setFeedReleaseModal(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [feedReleaseModal]);
-
-  useEffect(() => {
     const nodes = Array.from(document.querySelectorAll("[data-reveal]"));
     if (nodes.length === 0) return;
 
@@ -828,11 +824,20 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (!feedReleaseModal) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setFeedReleaseModal(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [feedReleaseModal]);
+
   if (isAuthLayout) {
     return (
       <div className="auth-layout-shell">
         <Routes>
-          <Route path="/auth" element={user ? <Navigate to="/dashboard" replace /> : <AuthPage onAuth={setUser} lang={lang} t={tr} />} />
+          <Route path="/auth" element={user ? <Navigate to={safeAuthRedirect} replace /> : <AuthPage onAuth={setUser} lang={lang} t={tr} />} />
           <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPasswordPage lang={lang} t={tr} />} />
           <Route path="/reset-password" element={user ? <Navigate to="/dashboard" replace /> : <ResetPasswordPage lang={lang} t={tr} />} />
         </Routes>
@@ -860,12 +865,10 @@ function App() {
           <NavLink to="/leaderboard"><span className="nav-mark" aria-hidden="true"><NavIcon type="leaderboard" /></span><span>{t.nav.leaderboard}</span></NavLink>
           <NavLink to="/"><span className="nav-mark" aria-hidden="true"><NavIcon type="releases" /></span><span>{t.nav.releases}</span></NavLink>
           {user?.role === "artist" && <NavLink to="/my-releases"><span className="nav-mark" aria-hidden="true"><NavIcon type="myReleases" /></span><span>{t.nav.myReleases}</span></NavLink>}
-          {user?.role === "artist" && <NavLink to="/studio"><span className="nav-mark" aria-hidden="true"><NavIcon type="studio" /></span><span>{t.nav.studio}</span></NavLink>}
           <NavLink to="/users"><span className="nav-mark" aria-hidden="true"><NavIcon type="users" /></span><span>{t.nav.users}</span></NavLink>
           {user?.role === "admin" && <NavLink to="/admin/users"><span className="nav-mark" aria-hidden="true"><NavIcon type="admin" /></span><span>{t.nav.admin}</span></NavLink>}
         </nav>
       </aside>
-      {mobileMenuOpen && <button className="sidebar-backdrop" type="button" aria-label={t.misc.closeMenu} onClick={() => setMobileMenuOpen(false)} />}
 
       <main className="page">
         <div className="page-inner">
@@ -916,7 +919,7 @@ function App() {
                           className="liquid-search-item"
                           onClick={() => openArtistFromSearch(artist.id)}
                         >
-                          @{artist.stage_name}
+                          <ArtistIdentity artist={artist} withAt unknown={tr("common.unknownArtist", "Nezināms mākslinieks")} />
                         </button>
                       ))}
                     </div>
@@ -932,7 +935,7 @@ function App() {
                           onClick={() => openReleaseFromSearch(item.id)}
                         >
                           <span>{item.title}</span>
-                          <em>{item.artist?.stage_name ?? tr("common.unknownArtist", "Unknown artist")}</em>
+                          <em><ArtistIdentity artist={item.artist} unknown={tr("common.unknownArtist", "Nezināms mākslinieks")} /></em>
                         </button>
                       ))}
                     </div>
@@ -1050,10 +1053,10 @@ function App() {
                               onClick={(e) => e.stopPropagation()}
                               onKeyDown={(e) => e.stopPropagation()}
                             >
-                              {item.artist?.stage_name ?? t.misc.unknownArtist}
+                              <ArtistIdentity artist={item.artist} unknown={t.misc.unknownArtist} />
                             </Link>
                           ) : (
-                            item.artist?.stage_name ?? t.misc.unknownArtist
+                            <ArtistIdentity artist={item.artist} unknown={t.misc.unknownArtist} />
                           )}
                         </p>
                         <small>
@@ -1071,29 +1074,31 @@ function App() {
 
           <section className="content-wrap" data-reveal>
             {sessionError && <p className="error">{sessionError}</p>}
-            <Routes>
-              <Route path="/dashboard" element={<DashboardPage user={user} lang={lang} t={tr} />} />
-              <Route path="/about" element={<AboutPage lang={lang} t={tr} />} />
-              <Route path="/discover" element={<DiscoverPage lang={lang} t={tr} />} />
-              <Route path="/" element={<ReleasesPage user={user} lang={lang} t={tr} />} />
-              <Route path="/artist/drop" element={<ArtistDropPage user={user} lang={lang} t={tr} />} />
-              <Route path="/live-feed" element={<LiveFeedPage lang={lang} t={tr} />} />
-              <Route path="/leaderboard" element={<LeaderboardPage lang={lang} t={tr} />} />
-              <Route path="/radar" element={<ReleaseRadarPage />} />
-              <Route path="/onboarding" element={<OnboardingPage />} />
-              <Route path="/releases/:releaseId" element={<ReleaseDetailsPage user={user} lang={lang} t={tr} />} />
-              <Route path="/artists/:artistId" element={<ArtistProfilePage t={tr} />} />
-              <Route path="/my-releases" element={<MyReleasesPage user={user} lang={lang} t={tr} />} />
-              <Route path="/studio" element={<StudioPage user={user} lang={lang} t={tr} />} />
-              <Route path="/stats" element={<StatsPage lang={lang} t={tr} />} />
-              <Route path="/users" element={<UserCommentsPage lang={lang} t={tr} />} />
-              <Route path="/users/:userId" element={<UserProfileInsightsPage lang={lang} t={tr} />} />
-              <Route path="/admin/users" element={<AdminUsersPage user={user} lang={lang} t={tr} />} />
-              <Route path="/profile" element={<ProfilePage user={user} lang={lang} t={tr} />} />
-              <Route path="/auth" element={<AuthPage onAuth={setUser} lang={lang} t={tr} />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage lang={lang} t={tr} />} />
-              <Route path="/reset-password" element={<ResetPasswordPage lang={lang} t={tr} />} />
-            </Routes>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/dashboard" element={<DashboardPage user={user} lang={lang} t={tr} />} />
+                <Route path="/about" element={<AboutPage lang={lang} t={tr} />} />
+                <Route path="/discover" element={<DiscoverPage lang={lang} t={tr} />} />
+                <Route path="/" element={<ReleasesPage user={user} lang={lang} t={tr} />} />
+                <Route path="/artist/drop" element={<ArtistDropPage user={user} lang={lang} t={tr} />} />
+                <Route path="/live-feed" element={<LiveFeedPage lang={lang} t={tr} />} />
+                <Route path="/leaderboard" element={<LeaderboardPage lang={lang} t={tr} />} />
+                <Route path="/radar" element={<ReleaseRadarPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/releases/:releaseId" element={<ReleaseDetailsPage user={user} lang={lang} t={tr} />} />
+                <Route path="/artists/:artistId" element={<ArtistProfilePage t={tr} />} />
+                <Route path="/my-releases" element={<MyReleasesPage user={user} lang={lang} t={tr} />} />
+                <Route path="/studio" element={<StudioPage user={user} lang={lang} t={tr} />} />
+                <Route path="/stats" element={<StatsPage lang={lang} t={tr} />} />
+                <Route path="/users" element={<UserCommentsPage lang={lang} t={tr} />} />
+                <Route path="/users/:userId" element={<UserProfileInsightsPage lang={lang} t={tr} />} />
+                <Route path="/admin/users" element={<AdminUsersPage user={user} lang={lang} t={tr} />} />
+                <Route path="/profile" element={<ProfilePage user={user} lang={lang} t={tr} />} />
+                <Route path="/auth" element={<AuthPage onAuth={setUser} lang={lang} t={tr} />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage lang={lang} t={tr} />} />
+                <Route path="/reset-password" element={<ResetPasswordPage lang={lang} t={tr} />} />
+              </Routes>
+            </ErrorBoundary>
           </section>
         </div>
       </main>
@@ -1110,23 +1115,23 @@ function App() {
               <p className="tag">{String(feedReleaseModal.type ?? "single").toUpperCase()}</p>
               <h3>{feedReleaseModal.title}</h3>
               <p className="muted">
-                {feedReleaseModal.artist?.stage_name ?? t.misc.unknownArtist} • {feedReleaseModal.release_date}
+                <ArtistIdentity artist={feedReleaseModal.artist} unknown={t.misc.unknownArtist} /> • {feedReleaseModal.release_date}
               </p>
               <div className="feed-modal-kpi-row">
                 <span className="feed-modal-kpi">★ {averageScore(feedReleaseModal).toFixed(1)}</span>
                 <span className="feed-modal-kpi">{tr("pages.leaderboard.votes", "Votes")}: {Number(feedReleaseModal.ratings_count ?? 0)}</span>
-                <span className="feed-modal-kpi">{tr("pages.dashboard.kpiComments", "Komentari")}: {Number(feedReleaseModal.comments_count ?? 0)}</span>
+                <span className="feed-modal-kpi">{tr("pages.dashboard.kpiComments", "Komentāri")}: {Number(feedReleaseModal.comments_count ?? 0)}</span>
               </div>
             </div>
             <div className="feed-modal-metrics">
               <article><strong>{tr("common.textMetric", "Teksts")}</strong><span>{metricScore(feedReleaseModal.avg_rhymes_images)}</span></article>
               <article><strong>{tr("common.rhythmMetric", "Ritmika")}</strong><span>{metricScore(feedReleaseModal.avg_structure_rhythm)}</span></article>
               <article><strong>{tr("common.styleMetric", "Stils")}</strong><span>{metricScore(feedReleaseModal.avg_style_execution)}</span></article>
-              <article><strong>{tr("common.individualityMetric", "Individualitate")}</strong><span>{metricScore(feedReleaseModal.avg_individuality_charisma)}</span></article>
+              <article><strong>{tr("common.individualityMetric", "Individualitāte")}</strong><span>{metricScore(feedReleaseModal.avg_individuality_charisma)}</span></article>
             </div>
             <div className="feed-modal-actions">
               <button type="button" className="liquid-pill-btn" onClick={() => setFeedReleaseModal(null)}>
-                {tr("misc.closeMenu", "Aizvert")}
+                {tr("misc.closeMenu", "Aizvērt")}
               </button>
               <button
                 type="button"

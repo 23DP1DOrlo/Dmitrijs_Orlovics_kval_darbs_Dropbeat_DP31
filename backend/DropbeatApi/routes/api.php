@@ -42,7 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/releases/{release}/feedback', [ReleaseController::class, 'submitFeedback']);
     Route::post('/releases/{release}/rate', [ReleaseController::class, 'rate']);
     Route::post('/releases/{release}/comments', [ReleaseController::class, 'comment']);
+    Route::delete('/releases/{release}/comments/{comment}', [ReleaseController::class, 'destroyComment']);
     Route::get('/me/artist-profile', [ArtistController::class, 'myProfile']);
     Route::put('/me/artist-profile', [ArtistController::class, 'updateMyProfile']);
     Route::post('/me/artist-profile/upload-avatar', [ArtistController::class, 'uploadMyAvatar']);
+    Route::delete('/admin/artists/{artist}/avatar', [AdminUserController::class, 'destroyArtistAvatar']);
 });

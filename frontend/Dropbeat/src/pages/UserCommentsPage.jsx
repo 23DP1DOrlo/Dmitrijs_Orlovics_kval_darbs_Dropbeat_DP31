@@ -12,14 +12,26 @@ export function UserCommentsPage() {
   const [details, setDetails] = useState(null);
   const [error, setError] = useState("");
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const searchUsers = async () => {
+    const term = query.trim();
+    if (term.length === 0) {
+      setUsers([]);
+      setShowSuggestions(false);
+      return;
+    }
+
     try {
+      setLoadingSuggestions(true);
       setError("");
-      const { data } = await api.get("/users/search-comments", { params: { query } });
-      setUsers(data);
+      const { data } = await api.get("/users/search-comments", { params: { query: term } });
+      setUsers(data ?? []);
+      setShowSuggestions(false);
     } catch {
-      setError("Neizdevas atrast lietotajus.");
+      setError("Neizdevās atrast lietotājus.");
+    } finally {
+      setLoadingSuggestions(false);
     }
   };
 
@@ -27,6 +39,7 @@ export function UserCommentsPage() {
     const term = query.trim();
     if (term.length === 0) {
       setUsers([]);
+      setShowSuggestions(false);
       return;
     }
 
@@ -37,7 +50,7 @@ export function UserCommentsPage() {
         const { data } = await api.get("/users/search-comments", { params: { query: term } });
         setUsers(data ?? []);
       } catch {
-        setError("Neizdevas atrast lietotajus.");
+        setError("Neizdevās atrast lietotājus.");
       } finally {
         setLoadingSuggestions(false);
       }
@@ -52,7 +65,7 @@ export function UserCommentsPage() {
       const { data } = await api.get(`/users/${user.id}/comments`);
       setDetails(data);
     } catch {
-      setError("Neizdevas ieladet komentaru vesturi.");
+      setError("Neizdevās ielādēt komentāru vēsturi.");
     }
   };
 
@@ -65,14 +78,34 @@ export function UserCommentsPage() {
   return (
     <section className="panel">
       <h2>User Insights</h2>
-      <p className="muted">Mekle artistus un klausitajus, apskati vinu komentarus un novertejumus.</p>
+      <p className="muted">Meklē māksliniekus un klausītājus, apskati viņu komentārus un novērtējumus.</p>
       <div className="filters">
         <div className="search-suggest-wrap">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Meklet pec varda vai nika" />
-          {query.trim().length > 0 && (
+          <input
+            value={query}
+            onChange={(e) => {
+              const nextQuery = e.target.value;
+              setQuery(nextQuery);
+              setShowSuggestions(nextQuery.trim().length > 0);
+            }}
+            onFocus={() => {
+              if (query.trim().length > 0) setShowSuggestions(true);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                searchUsers();
+              }
+              if (event.key === "Escape") {
+                setShowSuggestions(false);
+              }
+            }}
+            placeholder="Meklēt pēc vārda vai nika"
+          />
+          {showSuggestions && query.trim().length > 0 && (
             <div className="search-suggest-list">
-              {loadingSuggestions && <p className="small-text">Meklesana...</p>}
-              {!loadingSuggestions && users.length === 0 && <p className="small-text">Nav rezultatu</p>}
+              {loadingSuggestions && <p className="small-text">Meklēšana...</p>}
+              {!loadingSuggestions && users.length === 0 && <p className="small-text">Nav rezultātu</p>}
               {!loadingSuggestions && users.map((user) => (
                 <button
                   key={user.id}
@@ -80,6 +113,7 @@ export function UserCommentsPage() {
                   className="search-suggest-item"
                   onClick={() => {
                     setQuery(user.name);
+                    setShowSuggestions(false);
                     loadDetails(user);
                   }}
                 >
@@ -90,7 +124,7 @@ export function UserCommentsPage() {
             </div>
           )}
         </div>
-        <button type="button" onClick={searchUsers}>Meklet</button>
+        <button type="button" className="search-submit-btn" onClick={searchUsers}>Meklēt</button>
       </div>
       {error && <p className="error">{error}</p>}
 
@@ -102,16 +136,16 @@ export function UserCommentsPage() {
               Loma: {user.role}
               {user.artist?.stage_name ? ` | Niks: ${user.artist.stage_name}` : ""}
             </p>
-            <small>Komentari: {user.release_comments_count}</small>
-            <small>Novertejumi: {user.release_ratings_count ?? 0}</small>
-            <p><Link to={`/users/${user.id}`} onClick={(event) => event.stopPropagation()}>Atvert profilu</Link></p>
+            <small>Komentāri: {user.release_comments_count}</small>
+            <small>Novērtējumi: {user.release_ratings_count ?? 0}</small>
+            <p><Link to={`/users/${user.id}`} onClick={(event) => event.stopPropagation()}>Atvērt profilu</Link></p>
           </article>
         ))}
       </div>
 
       {details && (
         <>
-          <h3>{details.user.name} komentari ({details.comment_count})</h3>
+          <h3>{details.user.name} komentāri ({details.comment_count})</h3>
           <div className="comment-list">
             {details.comments.map((item) => (
               <article className="card user-activity-card clickable-card" key={item.id} onClick={() => item.release?.id && navigate(`/releases/${item.release.id}`)}>
@@ -124,7 +158,7 @@ export function UserCommentsPage() {
             ))}
           </div>
 
-          <h3>{details.user.name} novertejumi ({details.rating_count ?? 0})</h3>
+          <h3>{details.user.name} novērtējumi ({details.rating_count ?? 0})</h3>
           <div className="comment-list">
             {(details.ratings ?? []).map((item) => (
               <article className="card user-activity-card clickable-card" key={item.id} onClick={() => item.release?.id && navigate(`/releases/${item.release.id}`)}>
@@ -139,7 +173,7 @@ export function UserCommentsPage() {
                       <p>Teksts: {item.rhymes_images}</p>
                       <p>Ritmika: {item.structure_rhythm}</p>
                       <p>Stils: {item.style_execution}</p>
-                      <p>Individualitate: {item.individuality_charisma}</p>
+                      <p>Individualitāte: {item.individuality_charisma}</p>
                     </div>
                   </div>
                 </div>

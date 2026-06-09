@@ -13,7 +13,7 @@ export function UserProfileInsightsPage() {
   useEffect(() => {
     api.get(`/users/${userId}/comments`)
       .then(({ data }) => setDetails(data))
-      .catch(() => setError("Neizdevas ieladet lietotaja aktivitates."));
+      .catch(() => setError("Neizdevās ielādēt lietotāja aktivitātes."));
   }, [userId]);
 
   if (error) {
@@ -21,7 +21,7 @@ export function UserProfileInsightsPage() {
   }
 
   if (!details) {
-    return <section className="panel"><p>Ielade...</p></section>;
+    return <section className="panel"><p>Ielāde...</p></section>;
   }
 
   const formatDate = (value) => {
@@ -38,13 +38,13 @@ export function UserProfileInsightsPage() {
         {details.user.artist?.stage_name ? ` | niks: ${details.user.artist.stage_name}` : ""}
       </p>
       <div className="kpi-grid">
-        <article className="card"><h3>{details.comment_count}</h3><p>Komentari</p></article>
-        <article className="card"><h3>{details.rating_count ?? 0}</h3><p>Novertejumi</p></article>
+        <article className="card"><h3>{details.comment_count}</h3><p>Komentāri</p></article>
+        <article className="card"><h3>{details.rating_count ?? 0}</h3><p>Novērtējumi</p></article>
       </div>
 
       <div className="user-activity-layout">
         <section className="user-activity-column">
-          <h3>Ka noverteja relizes</h3>
+          <h3>Kā novērtēja relīzes</h3>
           <div className="comment-list">
             {(details.ratings ?? []).map((item) => (
               <article className="card user-activity-card clickable-card" key={item.id} onClick={() => item.release?.id && navigate(`/releases/${item.release.id}`)}>
@@ -59,18 +59,18 @@ export function UserProfileInsightsPage() {
                       <p>Teksts: {item.rhymes_images}</p>
                       <p>Ritmika: {item.structure_rhythm}</p>
                       <p>Stils: {item.style_execution}</p>
-                      <p>Individualitate: {item.individuality_charisma}</p>
+                      <p>Individualitāte: {item.individuality_charisma}</p>
                     </div>
                   </div>
                 </div>
               </article>
             ))}
-            {(!details.ratings || details.ratings.length === 0) && <p className="muted">Sobrid nav novertejumu.</p>}
+            {(!details.ratings || details.ratings.length === 0) && <p className="muted">Šobrīd nav novērtējumu.</p>}
           </div>
         </section>
 
         <section className="user-activity-column">
-          <h3>Kur komenteja</h3>
+          <h3>Kur komentēja</h3>
           <div className="comment-list">
             {(details.comments ?? []).map((item) => (
               <article className="card user-activity-card clickable-card" key={item.id} onClick={() => item.release?.id && navigate(`/releases/${item.release.id}`)}>
@@ -81,7 +81,7 @@ export function UserProfileInsightsPage() {
                 </div>
               </article>
             ))}
-            {(!details.comments || details.comments.length === 0) && <p className="muted">Sobrid nav komentaru.</p>}
+            {(!details.comments || details.comments.length === 0) && <p className="muted">Šobrīd nav komentāru.</p>}
           </div>
         </section>
       </div>

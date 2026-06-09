@@ -28,7 +28,7 @@ export function AdminUsersPage({ user }) {
       const { data } = await api.get("/admin/users", { params: { query: search } });
       setUsers(data.data ?? []);
     } catch {
-      setError("Neizdevas ieladet lietotajus.");
+      setError("Neizdevās ielādēt lietotājus.");
     }
   };
 
@@ -55,7 +55,7 @@ export function AdminUsersPage({ user }) {
         youtube_url: data.artist?.profile?.youtube_url ?? "",
       });
     } catch {
-      setError("Neizdevas ieladet pilnu lietotaja profilu.");
+      setError("Neizdevās ielādēt pilnu lietotāja profilu.");
     }
   };
 
@@ -68,7 +68,7 @@ export function AdminUsersPage({ user }) {
       loadUsers(query);
       selectUser(selected);
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas saglabat izmainas.");
+      setError(requestError?.response?.data?.message ?? "Neizdevās saglabāt izmaiņas.");
     }
   };
 
@@ -76,12 +76,25 @@ export function AdminUsersPage({ user }) {
     if (!selected) return;
     try {
       await api.delete(`/admin/users/${selected.id}`);
-      setMessage("Lietotajs dzests.");
+      setMessage("Lietotājs dzēsts.");
       setSelected(null);
       setForm(initialForm);
       loadUsers(query);
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? "Neizdevas dzest lietotaju.");
+      setError(requestError?.response?.data?.message ?? "Neizdevās dzēst lietotāju.");
+    }
+  };
+
+  const removeArtistAvatar = async () => {
+    if (!selected?.artist?.id) return;
+    try {
+      setError("");
+      await api.delete(`/admin/artists/${selected.artist.id}/avatar`);
+      setMessage("Avatars dzēsts.");
+      await selectUser(selected);
+      loadUsers(query);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? "Neizdevās dzēst avataru.");
     }
   };
 
@@ -95,8 +108,8 @@ export function AdminUsersPage({ user }) {
       {message && <p className="ok">{message}</p>}
       {error && <p className="error">{error}</p>}
       <div className="filters">
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Meklet pec varda vai nika" />
-        <button type="button" onClick={() => loadUsers(query)}>Meklet</button>
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Meklēt pēc vārda vai nika" />
+        <button type="button" onClick={() => loadUsers(query)}>Meklēt</button>
       </div>
       <div className="kpi-grid">
         {users.map((u) => (
@@ -110,22 +123,32 @@ export function AdminUsersPage({ user }) {
 
       {selected && (
         <form className="form-grid" onSubmit={save}>
-          <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Vards" />
+          <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Vārds" />
           <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="E-pasts" />
           <select value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}>
             <option value="listener">listener</option>
             <option value="artist">artist</option>
             <option value="admin">admin</option>
           </select>
-          <input value={form.stage_name} onChange={(e) => setForm((p) => ({ ...p, stage_name: e.target.value }))} placeholder="Skatuves vards" />
+          <input value={form.stage_name} onChange={(e) => setForm((p) => ({ ...p, stage_name: e.target.value }))} placeholder="Skatuves vārds" />
           <input value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} placeholder="Valsts kods" />
-          <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} placeholder="Pilseta" />
+          <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} placeholder="Pilsēta" />
           <input value={form.label_name} onChange={(e) => setForm((p) => ({ ...p, label_name: e.target.value }))} placeholder="Leibls" />
           <input value={form.instagram_url} onChange={(e) => setForm((p) => ({ ...p, instagram_url: e.target.value }))} placeholder="Instagram URL" />
           <input value={form.youtube_url} onChange={(e) => setForm((p) => ({ ...p, youtube_url: e.target.value }))} placeholder="YouTube URL" />
+          {selected.artist?.profile?.avatar_url && (
+            <>
+              <img
+                src={selected.artist.profile.avatar_url}
+                alt="Artist avatar"
+                style={{ width: "72px", height: "72px", objectFit: "cover", borderRadius: "999px", border: "1px solid var(--border)" }}
+              />
+              <button type="button" className="danger" onClick={removeArtistAvatar}>Dzēst avataru</button>
+            </>
+          )}
           <textarea rows={4} value={form.bio} onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))} placeholder="Bio" />
-          <button type="submit">Saglabat</button>
-          <button type="button" className="danger" onClick={remove}>Dzest lietotaju</button>
+          <button type="submit">Saglabāt</button>
+          <button type="button" className="danger" onClick={remove}>Dzēst lietotāju</button>
         </form>
       )}
     </section>

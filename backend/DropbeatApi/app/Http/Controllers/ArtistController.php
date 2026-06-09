@@ -35,7 +35,7 @@ class ArtistController extends Controller
      */
     public function publicProfile(Artist $artist)
     {
-        $artist->load('profile');
+        $artist->load(['profile', 'user:id,name']);
 
         $pivotReleaseIds = DB::table('release_artists')
             ->where('artist_id', $artist->id)
@@ -52,7 +52,7 @@ class ArtistController extends Controller
                     $query->orWhereIn('id', $pivotReleaseIds);
                 }
             })
-            ->with(['genre', 'artist', 'artists'])
+            ->with(['genre', 'artist.user', 'artists.user'])
             ->withCount('ratings')
             ->withAvg('ratings as avg_rhymes_images', 'rhymes_images')
             ->withAvg('ratings as avg_structure_rhythm', 'structure_rhythm')
@@ -80,6 +80,7 @@ class ArtistController extends Controller
         return response()->json([
             'id' => $artist->id,
             'stage_name' => $artist->stage_name,
+            'full_name' => $artist->user?->name,
             'country' => $artist->country,
             'is_verified' => (bool) $artist->is_verified,
             'profile' => $artist->profile,
@@ -116,7 +117,7 @@ class ArtistController extends Controller
         $artist = Artist::with('profile')->where('user_id', $request->user()->id)->first();
 
         if (! $artist) {
-            return response()->json(['message' => 'Makslinieka profils nav atrasts'], 404);
+            return response()->json(['message' => 'Mākslinieka profils nav atrasts'], 404);
         }
 
         return $artist;
@@ -127,7 +128,7 @@ class ArtistController extends Controller
         $artist = Artist::firstWhere('user_id', $request->user()->id);
 
         if (! $artist) {
-            return response()->json(['message' => 'Makslinieka profils nav atrasts'], 404);
+            return response()->json(['message' => 'Mākslinieka profils nav atrasts'], 404);
         }
 
         $validated = $request->validate([
@@ -165,7 +166,7 @@ class ArtistController extends Controller
     {
         $artist = Artist::firstWhere('user_id', $request->user()->id);
         if (! $artist) {
-            return response()->json(['message' => 'Makslinieka profils nav atrasts'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => 'Mākslinieka profils nav atrasts'], Response::HTTP_NOT_FOUND);
         }
 
         $validated = $request->validate([

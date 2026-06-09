@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { Link, useNavigate } from "react-router-dom";
 import { CoverImage } from "../components/CoverImage";
+import { ArtistIdentity } from "../components/ArtistIdentity";
 
 export function DashboardPage({ user, t = (key, fallback) => fallback }) {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [latest, setLatest] = useState([]);
   const [overview, setOverview] = useState(null);
@@ -50,21 +52,21 @@ export function DashboardPage({ user, t = (key, fallback) => fallback }) {
 
   return (
     <section className="panel">
-      <h2>{t("pages.dashboard.title", "Dashboard")}</h2>
-      <p className="muted">{t("pages.dashboard.welcome", "Sveiks")}, {user?.name ?? t("common.guest", "viesis")}! {t("pages.dashboard.subtitle", "Seit ir projekta galvena atskaite.")}</p>
+      <h2>{t("pages.dashboard.title", "Panelis")}</h2>
+      <p className="muted">{t("pages.dashboard.welcome", "Sveiks")}, {user?.name ?? t("common.guest", "viesis")}! {t("pages.dashboard.subtitle", "Šeit ir projekta galvenais pārskats.")}</p>
 
       <div className="kpi-grid dashboard-kpi-grid">
         <article className="card kpi-card-3d"><h3>{overview?.totals?.releases ?? 0}</h3><p>{t("pages.dashboard.kpiReleases", "Kopējais relīžu skaits")}</p></article>
-        <article className="card kpi-card-3d"><h3>{overview?.totals?.users ?? 0}</h3><p>{t("pages.dashboard.kpiUsers", "Lietotaji platforma")}</p></article>
-        <article className="card kpi-card-3d"><h3>{overview?.totals?.comments ?? 0}</h3><p>{t("pages.dashboard.kpiComments", "Komentari")}</p></article>
-        <article className="card kpi-card-3d"><h3>{overview?.totals?.ratings ?? 0}</h3><p>{t("pages.dashboard.kpiRatings", "Novertejumi")}</p></article>
+        <article className="card kpi-card-3d"><h3>{overview?.totals?.users ?? 0}</h3><p>{t("pages.dashboard.kpiUsers", "Lietotāji platformā")}</p></article>
+        <article className="card kpi-card-3d"><h3>{overview?.totals?.comments ?? 0}</h3><p>{t("pages.dashboard.kpiComments", "Komentāri")}</p></article>
+        <article className="card kpi-card-3d"><h3>{overview?.totals?.ratings ?? 0}</h3><p>{t("pages.dashboard.kpiRatings", "Novērtējumi")}</p></article>
       </div>
-      {loadingOverview && <p className="small-text">{t("pages.dashboard.loading", "Ieladejam realo statistiku no datubazes...")}</p>}
-      {!loadingOverview && !overview?.totals && <p className="error">{t("pages.dashboard.loadError", "Neizdevas ieladet statistiku no datubazes.")}</p>}
+      {loadingOverview && <p className="small-text">{t("pages.dashboard.loading", "Ielādējam reālo statistiku no datubāzes...")}</p>}
+      {!loadingOverview && !overview?.totals && <p className="error">{t("pages.dashboard.loadError", "Neizdevās ielādēt statistiku no datubāzes.")}</p>}
 
       <section className="upcoming-shell">
         <div className="upcoming-head">
-          <h3>{t("pages.dashboard.upcoming", "Upcoming Releases")}</h3>
+          <h3>{t("pages.dashboard.upcoming", "Gaidāmās relīzes")}</h3>
         </div>
         <div className="upcoming-grid">
           {upcoming.map((item) => (
@@ -75,10 +77,10 @@ export function DashboardPage({ user, t = (key, fallback) => fallback }) {
                 <p>
                   {item.artist?.id ? (
                     <Link to={`/artists/${item.artist.id}`} className="dashboard-artist-link" onClick={(e) => e.stopPropagation()}>
-                      {item.artist?.stage_name}
+                      <ArtistIdentity artist={item.artist} unknown={t("common.unknownArtist", "Nezināms mākslinieks")} />
                     </Link>
                   ) : (
-                    item.artist?.stage_name
+                    <ArtistIdentity artist={item.artist} unknown={t("common.unknownArtist", "Nezināms mākslinieks")} />
                   )}
                   {" — "}
                   {item.release_date}
@@ -92,7 +94,7 @@ export function DashboardPage({ user, t = (key, fallback) => fallback }) {
               </div>
             </article>
           ))}
-          {upcoming.length === 0 && <p className="muted">{t("pages.dashboard.noUpcoming", "Pagaidam nav relizu ar nakotnes datumu.")}</p>}
+          {upcoming.length === 0 && <p className="muted">{t("pages.dashboard.noUpcoming", "Pagaidām nav relīžu ar nākotnes datumu.")}</p>}
         </div>
       </section>
 
@@ -105,10 +107,10 @@ export function DashboardPage({ user, t = (key, fallback) => fallback }) {
             <p>
               {item.artist?.id ? (
                 <Link to={`/artists/${item.artist.id}`} className="dashboard-artist-link" onClick={(e) => e.stopPropagation()}>
-                  {item.artist?.stage_name}
+                  <ArtistIdentity artist={item.artist} unknown={t("common.unknownArtist", "Nezināms mākslinieks")} />
                 </Link>
               ) : (
-                item.artist?.stage_name
+                <ArtistIdentity artist={item.artist} unknown={t("common.unknownArtist", "Nezināms mākslinieks")} />
               )}
               {" — "}
               {item.genre?.name}

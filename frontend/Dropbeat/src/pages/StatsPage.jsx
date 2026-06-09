@@ -13,13 +13,13 @@ export function StatsPage() {
 
   return (
     <section className="panel">
-      <h2>Statistika pa zanriem</h2>
+      <h2>Statistika pa žanriem</h2>
       {overview?.totals && (
         <div className="kpi-grid">
-          <article className="card"><h3>{overview.totals.users}</h3><p>Lietotaji</p></article>
-          <article className="card"><h3>{overview.totals.releases}</h3><p>Relizes</p></article>
-          <article className="card"><h3>{overview.totals.comments}</h3><p>Komentari</p></article>
-          <article className="card"><h3>{overview.totals.ratings}</h3><p>Novertejumi</p></article>
+          <article className="card"><h3>{overview.totals.users}</h3><p>Lietotāji</p></article>
+          <article className="card"><h3>{overview.totals.releases}</h3><p>Relīzes</p></article>
+          <article className="card"><h3>{overview.totals.comments}</h3><p>Komentāri</p></article>
+          <article className="card"><h3>{overview.totals.ratings}</h3><p>Novērtējumi</p></article>
           <article className="card"><h3>{overview.totals.streams}</h3><p>Streams</p></article>
           <article className="card"><h3>{overview.totals.likes}</h3><p>Likes</p></article>
         </div>
@@ -27,10 +27,10 @@ export function StatsPage() {
       <table>
         <thead>
           <tr>
-            <th>Zanrs</th>
+            <th>Žanrs</th>
             <th>Streams</th>
             <th>Likes</th>
-            <th>Relizu skaits</th>
+            <th>Relīžu skaits</th>
           </tr>
         </thead>
         <tbody>
@@ -47,13 +47,13 @@ export function StatsPage() {
 
       {overview?.top_users?.length > 0 && (
         <>
-          <h3>Aktivakie lietotaji</h3>
+          <h3>Aktīvākie lietotāji</h3>
           <div className="comment-list">
             {overview.top_users.map((user) => (
               <article key={user.id} className="card">
                 <h3>{user.name}</h3>
-                <small>{user.role} • Komentari: {user.release_comments_count} • Novertejumi: {user.release_ratings_count}</small>
-                <p><Link to={`/users/${user.id}`}>Atvert aktivitati</Link></p>
+                <small>{user.role} • Komentāri: {user.release_comments_count} • Novērtējumi: {user.release_ratings_count}</small>
+                <p><Link to={`/users/${user.id}`}>Atvērt aktivitāti</Link></p>
               </article>
             ))}
           </div>
