@@ -7,7 +7,7 @@ DropBeat ir mūzikas relīžu platforma ar:
 - admin moderācijas funkcijām,
 - autentifikāciju un paroles atjaunošanu.
 
-## Tehniskais steks
+## Tehnoloģijas
 
 - Frontend: `React 19`, `Vite 8`, `React Router`, `Axios`
 - Backend: `Laravel 13`, `PHP 8.3+`, `Sanctum`, `Eloquent`
